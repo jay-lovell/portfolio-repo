@@ -85,7 +85,7 @@
     <button class="calculate-button" id="calculate-btn" type="button">Calculate</button>
 
     <div id="result" class="result-box" hidden>
-      <p class="result-copy">Your weight change this week is</p>
+      <p class="result-copy">Cumulative change from your starting weight</p>
       <p id="result-text" class="result-value"></p>
     </div>
   </main>
@@ -156,7 +156,9 @@
       const changePct = ((todayKg - startKg) / startKg) * 100;
       const formatted = Math.abs(changePct).toFixed(1);
       const isLoss = changePct < 0;
-      resultText.textContent = isLoss ? `LOST ${formatted}%` : `GAINED ${formatted}%`;
+      resultText.textContent = isLoss
+        ? `LOST ${formatted}% of your starting weight`
+        : `GAINED ${formatted}% of your starting weight`;
       resultText.className = `result-value ${isLoss ? 'lost' : 'gained'}`;
       resultContainer.hidden = false;
     });
