@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <link rel="stylesheet" href="../main.css" />
+  <link rel="stylesheet" href="./weightcalc.css" />
+  <title>PRESC Weight Change Calculator</title>
+</head>
+<body>
+  <main class="page-shell" aria-label="Weight change calculator">
+    <section class="brand-bar">
+      <div class="brand-logo-wrap">
+        <img src="../images/presc-logo.jpeg" alt="PRESC logo" class="brand-logo" />
+      </div>
+      <div>
+        <h1>PRESC Weight Change Calculator</h1>
+        <p class="intro">Choose one measurement system and enter both weights in that same unit.</p>
+      </div>
+    </section>
+
+    <div class="unit-switcher">
+      <label for="weight-unit">Input units</label>
+      <select id="weight-unit" aria-label="Weight input units">
+        <option value="st-lb">Stones & Pounds</option>
+        <option value="lb">Pounds</option>
+        <option value="kg">Kilograms</option>
+      </select>
+    </div>
+
+    <section class="input-grid">
+      <div class="weight-card">
+        <h2>Starting Weight</h2>
+        <div class="field-group">
+          <div id="start-stlb" class="row columns-2">
+            <div>
+              <label for="start-stones">Stones</label>
+              <input id="start-stones" type="number" min="0" step="1" inputmode="numeric" placeholder="st" />
+            </div>
+            <div>
+              <label for="start-pounds">Pounds</label>
+              <input id="start-pounds" type="number" min="0" step="0.1" inputmode="decimal" placeholder="lb" />
+            </div>
+          </div>
+
+          <div id="start-lb" class="field-group" hidden>
+            <label for="start-pounds-only">Pounds</label>
+            <input id="start-pounds-only" type="number" min="0" step="0.1" inputmode="decimal" placeholder="lbs" />
+          </div>
+
+          <div id="start-kg" class="field-group" hidden>
+            <label for="start-kilograms">Kilograms</label>
+            <input id="start-kilograms" type="number" min="0" step="0.1" inputmode="decimal" placeholder="kg" />
+          </div>
+        </div>
+      </div>
+
+      <div class="weight-card">
+        <h2>Today's Weight</h2>
+        <div class="field-group">
+          <div id="today-stlb" class="row columns-2">
+            <div>
+              <label for="today-stones">Stones</label>
+              <input id="today-stones" type="number" min="0" step="1" inputmode="numeric" placeholder="st" />
+            </div>
+            <div>
+              <label for="today-pounds">Pounds</label>
+              <input id="today-pounds" type="number" min="0" step="0.1" inputmode="decimal" placeholder="lb" />
+            </div>
+          </div>
+
+          <div id="today-lb" class="field-group" hidden>
+            <label for="today-pounds-only">Pounds</label>
+            <input id="today-pounds-only" type="number" min="0" step="0.1" inputmode="decimal" placeholder="lbs" />
+          </div>
+
+          <div id="today-kg" class="field-group" hidden>
+            <label for="today-kilograms">Kilograms</label>
+            <input id="today-kilograms" type="number" min="0" step="0.1" inputmode="decimal" placeholder="kg" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <button class="calculate-button" id="calculate-btn" type="button">Calculate</button>
+
+    <div id="result" class="result-box" hidden>
+      <p class="result-copy">Your weight change this week is</p>
+      <p id="result-text" class="result-value"></p>
+    </div>
+
+    <p class="note-text">Tip: Select one unit system and enter both weights using that format.</p>
+  </main>
+
+  <script>
+    const weightUnit = document.getElementById('weight-unit');
+    const prefixes = ['start', 'today'];
+
+    function toggleUnitFields(unit) {
+      prefixes.forEach(prefix => {
+        const stlb = document.getElementById(`${prefix}-stlb`);
+        const lb = document.getElementById(`${prefix}-lb`);
+        const kg = document.getElementById(`${prefix}-kg`);
+
+        stlb.hidden = unit !== 'st-lb';
+        lb.hidden = unit !== 'lb';
+        kg.hidden = unit !== 'kg';
+      });
+    }
+
+    function clearHiddenFields(unit) {
+      prefixes.forEach(prefix => {
+        if (unit !== 'st-lb') {
+          document.getElementById(`${prefix}-stones`).value = '';
+          document.getElementById(`${prefix}-pounds`).value = '';
+        }
+        if (unit !== 'lb') {
+          document.getElementById(`${prefix}-pounds-only`).value = '';
+        }
+        if (unit !== 'kg') {
+          document.getElementById(`${prefix}-kilograms`).value = '';
+        }
+      });
+    }
+
+    toggleUnitFields(weightUnit.value);
+    weightUnit.addEventListener('change', () => {
+      clearHiddenFields(weightUnit.value);
+      toggleUnitFields(weightUnit.value);
+    });
+
+    function parseWeight(prefix) {
+      const unit = weightUnit.value;
+      if (unit === 'st-lb') {
+        const stones = parseFloat(document.getElementById(`${prefix}-stones`).value) || 0;
+        const pounds = parseFloat(document.getElementById(`${prefix}-pounds`).value) || 0;
+        return stones * 6.35029 + pounds * 0.45359237;
+      }
+      if (unit === 'lb') {
+        return (parseFloat(document.getElementById(`${prefix}-pounds-only`).value) || 0) * 0.45359237;
+      }
+      return parseFloat(document.getElementById(`${prefix}-kilograms`).value) || 0;
+    }
+
+    document.getElementById('calculate-btn').addEventListener('click', () => {
+      const startKg = parseWeight('start');
+      const todayKg = parseWeight('today');
+      const resultContainer = document.getElementById('result');
+      const resultText = document.getElementById('result-text');
+
+      if (!startKg || startKg <= 0 || !todayKg || todayKg <= 0) {
+        resultContainer.hidden = false;
+        resultText.textContent = 'Enter valid weights in both fields.';
+        resultText.className = 'result-value';
+        return;
+      }
+
+      const changePct = ((todayKg - startKg) / startKg) * 100;
+      const formatted = Math.abs(changePct).toFixed(1);
+      const isLoss = changePct < 0;
+      resultText.textContent = isLoss ? `LOST ${formatted}%` : `GAINED ${formatted}%`;
+      resultText.className = `result-value ${isLoss ? 'lost' : 'gained'}`;
+      resultContainer.hidden = false;
+    });
+  </script>
+</body>
+</html>
