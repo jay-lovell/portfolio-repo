@@ -22,140 +22,21 @@
     <div id="chart-container" class="result-box">
       <canvas id="weightChart"></canvas>
     </div>
+
+    <a href="./index.html" class="note-text" style="display: block; color: #5fd3b9; text-decoration: none; margin-top: 16px;">→ Go to Calculator</a>
+    <a href="./setup.html" class="note-text" style="display: block; color: #5fd3b9; text-decoration: none; margin-top: 8px;">→ Update Starting Weight</a>
   </main>
   <script src="./firebase-config.js"></script>
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-    import { getFirestore, collection, getDocs, query, orderBy } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
-    const firebaseConfig = window.firebaseConfig;
-    if (!firebaseConfig || !firebaseConfig.projectId) {
-      throw new Error('Firebase config not loaded. Ensure firebase-config.js is present.');
+    import { loadWeightData, renderChart } from './presc.js';
+
+    const container = document.getElementById('chart-container');
+    const data = await loadWeightData();   // no currentUser → percentages only (privacy)
+    if (data.length) {
+      renderChart('weightChart', data, container);
+    } else {
+      container.innerHTML = '<p class="note-text">No weight data recorded yet.</p>';
     }
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const USERS = ['Sarah', 'Jay'];
-    const CHART_COLORS = { Sarah: '#ff69b4', Jay: '#2196f3' };
-    function getMonday(date) {
-      const d = new Date(date);
-      const day = d.getDay();
-      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-      return new Date(d.setDate(diff));
-    }
-    function getWeekKey(date) {
-      const monday = getMonday(date);
-      return monday.toISOString().slice(0, 10);
-    }
-    function getWeeklyWinnersAndMissing(data) {
-      const weeks = {};
-      data.forEach(entry => {
-        const week = getWeekKey(entry.date);
-        if (!weeks[week]) weeks[week] = {};
-        const entryDate = new Date(entry.date);
-        const monday = getMonday(entry.date);
-        if (entryDate >= monday && entryDate < new Date(monday.getTime() + 7 * 86400000)) {
-          weeks[week][entry.user] = entry;
-        }
-      });
-      const results = {};
-      Object.entries(weeks).forEach(([week, users]) => {
-        let winner = null;
-        let missing = [];
-        if (users.Jay && users.Sarah) {
-          winner = users.Jay.changePct < users.Sarah.changePct ? 'Jay' : 'Sarah';
-        } else {
-          if (!users.Jay) missing.push('Jay');
-          if (!users.Sarah) missing.push('Sarah');
-        }
-        results[week] = { winner, missing };
-      });
-      return results;
-    }
-    function plotChart(data) {
-      const ctx = document.getElementById('weightChart').getContext('2d');
-      const dateKeys = Array.from(new Set(data.map((entry) => entry.date.slice(0, 10))));
-      dateKeys.sort();
-      const labels = dateKeys.map((date) => new Date(date).toLocaleDateString());
-      const datasets = USERS.map((user) => {
-        const userEntries = data.filter((entry) => entry.user === user).sort((a, b) => new Date(a.date) - new Date(b.date));
-        const valuesByDate = userEntries.reduce((acc, entry) => {
-          const dateKey = entry.date.slice(0, 10);
-          acc[dateKey] = Math.round((100 + entry.changePct) * 10) / 10;
-          return acc;
-        }, {});
-        const userData = dateKeys.map((dateKey) => valuesByDate[dateKey] ?? null);
-        return {
-          label: user,
-          data: userData,
-          borderColor: CHART_COLORS[user],
-          backgroundColor: user === 'Sarah' ? 'rgba(255,105,180,0.15)' : 'rgba(33,150,243,0.15)',
-          tension: 0.35,
-          fill: false,
-          pointRadius: 4,
-          pointHoverRadius: 6
-        };
-      });
-      // Show weekly winner and missing entry messages above chart
-      const results = getWeeklyWinnersAndMissing(data);
-      let winnerHtml = '<div class="note-text" style="margin-bottom:10px;">';
-      Object.entries(results).forEach(([week, {winner, missing}]) => {
-        if (winner) {
-          winnerHtml += `<b>Week of ${week}:</b> Winner: <span style=\"color:${CHART_COLORS[winner]}\">${winner}</span><br/>`;
-        } else if (missing.length > 0) {
-          winnerHtml += `<b>Week of ${week}:</b> <span style=\"color:#ffb300\">${missing.join(' and ')} ha${missing.length > 1 ? 've' : 's'} not entered their weight this week</span><br/>`;
-        }
-      });
-      winnerHtml += '</div>';
-      let chartContainer = document.getElementById('chart-container');
-      chartContainer.insertAdjacentHTML('afterbegin', winnerHtml);
-      if (window.weightChart) {
-        window.weightChart.destroy();
-      }
-      window.weightChart = new Chart(ctx, {
-        type: 'line',
-        data: { labels: labels, datasets: datasets },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { position: 'top' },
-            tooltip: {
-              callbacks: {
-                label: (context) => `${context.dataset.label}: ${context.parsed.y}%`
-              }
-            }
-          },
-          scales: {
-            x: { title: { display: true, text: 'Date' } },
-            y: {
-              beginAtZero: false,
-              suggestedMin: 80,
-              suggestedMax: 110,
-              title: { display: true, text: 'Relative Weight (%)' },
-              ticks: { callback: (value) => `${value}%` }
-            }
-          }
-        }
-      });
-    }
-    async function loadAllWeightData() {
-      try {
-        const q = query(collection(db, 'weightData'), orderBy('date'));
-        const querySnapshot = await getDocs(q);
-        const allData = [];
-        querySnapshot.forEach((doc) => {
-          allData.push(doc.data());
-        });
-        return allData;
-      } catch (error) {
-        console.error('Error loading chart data:', error);
-        return [];
-      }
-    }
-    (async () => {
-      const data = await loadAllWeightData();
-      if (data.length > 0) {
-        plotChart(data);
-      }
-    })();
   </script>
 </body>
 </html>

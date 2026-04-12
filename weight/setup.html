@@ -66,7 +66,8 @@
     </section>
 
     <button class="calculate-button" id="save-btn" type="button">Save Starting Weight</button>
-    <a href="./index.html" class="calculate-button" style="text-decoration: none; display: block; text-align: center; margin-top: 12px;">Go to Calculator</a>
+    <a href="./index.html" class="note-text" style="display: block; color: #5fd3b9; text-decoration: none; margin-top: 12px;">→ Go to Calculator</a>
+    <a href="./chart.html" class="note-text" style="display: block; color: #5fd3b9; text-decoration: none; margin-top: 8px;">→ View Competition Chart</a>
 
     <div id="result" class="result-box" hidden>
       <p id="result-text" class="result-value"></p>
@@ -75,111 +76,48 @@
 
   <script src="./firebase-config.js"></script>
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-    import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+    import { saveStartingWeight, parseWeightInputs } from './presc.js';
 
-    // Firebase configuration - loaded from generated config file
-    const firebaseConfig = window.firebaseConfig;
-    if (!firebaseConfig || !firebaseConfig.projectId) {
-      throw new Error('Firebase config not loaded. Ensure firebase-config.js is present.');
-    }
+    const weightUnit  = document.getElementById('weight-unit');
+    const userSelect  = document.getElementById('user-select');
+    const resultContainer = document.getElementById('result');
+    const resultText  = document.getElementById('result-text');
 
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    const weightUnit = document.getElementById('weight-unit');
-    const userSelect = document.getElementById('user-select');
+    /* ── Unit‑field toggling ─────────────────────────── */
 
     function toggleUnitFields(unit) {
-      const stlb = document.getElementById('start-stlb');
-      const lb = document.getElementById('start-lb');
-      const kg = document.getElementById('start-kg');
-
-      stlb.hidden = unit !== 'st-lb';
-      lb.hidden = unit !== 'lb';
-      kg.hidden = unit !== 'kg';
+      document.getElementById('start-stlb').hidden = unit !== 'st-lb';
+      document.getElementById('start-lb').hidden   = unit !== 'lb';
+      document.getElementById('start-kg').hidden   = unit !== 'kg';
     }
 
     function clearFields(unit) {
-      if (unit !== 'st-lb') {
-        document.getElementById('start-stones').value = '';
-        document.getElementById('start-pounds').value = '';
-      }
-      if (unit !== 'lb') {
-        document.getElementById('start-pounds-only').value = '';
-      }
-      if (unit !== 'kg') {
-        document.getElementById('start-kilograms').value = '';
-      }
-    }
-
-    function parseWeight() {
-      const unit = weightUnit.value;
-      if (unit === 'st-lb') {
-        const stones = parseFloat(document.getElementById('start-stones').value) || 0;
-        const pounds = parseFloat(document.getElementById('start-pounds').value) || 0;
-        return stones * 6.35029 + pounds * 0.45359237;
-      }
-      if (unit === 'lb') {
-        return (parseFloat(document.getElementById('start-pounds-only').value) || 0) * 0.45359237;
-      }
-      return parseFloat(document.getElementById('start-kilograms').value) || 0;
+      if (unit !== 'st-lb') { document.getElementById('start-stones').value = ''; document.getElementById('start-pounds').value = ''; }
+      if (unit !== 'lb')    { document.getElementById('start-pounds-only').value = ''; }
+      if (unit !== 'kg')    { document.getElementById('start-kilograms').value = ''; }
     }
 
     toggleUnitFields(weightUnit.value || 'st-lb');
-    
     weightUnit.addEventListener('change', () => {
-      if (weightUnit.value) {
-        clearFields(weightUnit.value);
-        toggleUnitFields(weightUnit.value);
-      }
+      clearFields(weightUnit.value);
+      toggleUnitFields(weightUnit.value);
     });
+
+    /* ── Save button ─────────────────────────────────── */
 
     document.getElementById('save-btn').addEventListener('click', async () => {
       const user = userSelect.value;
-      const unit = weightUnit.value;
-      const startKg = parseWeight();
-      const resultContainer = document.getElementById('result');
-      const resultText = document.getElementById('result-text');
+      if (!user) { resultContainer.hidden = false; resultText.textContent = 'Please select a user.'; resultText.className = 'result-value'; return; }
+      if (!weightUnit.value) { resultContainer.hidden = false; resultText.textContent = 'Please select weight units.'; resultText.className = 'result-value'; return; }
 
-      if (!user) {
-        resultContainer.hidden = false;
-        resultText.textContent = 'Please select a user.';
-        resultText.className = 'result-value';
-        return;
-      }
-
-      if (!unit) {
-        resultContainer.hidden = false;
-        resultText.textContent = 'Please select weight units.';
-        resultText.className = 'result-value';
-        return;
-      }
-
-      if (!startKg || startKg <= 0) {
-        resultContainer.hidden = false;
-        resultText.textContent = 'Enter a valid starting weight.';
-        resultText.className = 'result-value';
-        return;
-      }
+      const startKg = parseWeightInputs(weightUnit.value, {
+        stones: 'start-stones', pounds: 'start-pounds',
+        poundsOnly: 'start-pounds-only', kg: 'start-kilograms'
+      });
+      if (!startKg || startKg <= 0) { resultContainer.hidden = false; resultText.textContent = 'Enter a valid starting weight.'; resultText.className = 'result-value'; return; }
 
       try {
-        // Check if user already has a starting weight, delete it
-        const q = query(collection(db, 'startingWeight'), where('user', '==', user));
-        const querySnapshot = await getDocs(q);
-        for (const doc of querySnapshot.docs) {
-          await deleteDoc(doc.ref);
-        }
-
-        // Save new starting weight
-        await addDoc(collection(db, 'startingWeight'), {
-          user: user,
-          weight: startKg,
-          unit: weightUnit.value,
-          date: new Date().toISOString()
-        });
-
+        await saveStartingWeight(user, startKg, weightUnit.value);
         resultContainer.hidden = false;
         resultText.textContent = '✓ Starting weight saved!';
         resultText.className = 'result-value lost';

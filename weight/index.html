@@ -2,12 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="../main.css" />
   <link rel="stylesheet" href="./weightcalc.css" />
-  <script type="module">
-    window.firebaseImports = {};
-  </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <title>PRESC Weight Change Calculator</title>
 </head>
@@ -47,6 +44,7 @@
     </div>
 
     <a href="./setup.html" class="note-text" style="display: block; color: #5fd3b9; text-decoration: none; margin-bottom: 16px;">→ Update Starting Weight</a>
+    <a href="./chart.html" class="note-text" style="display: block; color: #5fd3b9; text-decoration: none; margin-bottom: 16px;">→ View Competition Chart</a>
 
     <section class="input-grid">
 
@@ -91,340 +89,69 @@
 
   <script src="./firebase-config.js"></script>
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-    import { getFirestore, collection, addDoc, getDocs, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+    import {
+      db, loadStartingWeight, loadWeightData, saveWeight,
+      renderChart, parseWeightInputs, todayISO
+    } from './presc.js';
 
-    // Firebase configuration - loaded from generated config file
-    const firebaseConfig = window.firebaseConfig;
-    if (!firebaseConfig || !firebaseConfig.projectId) {
-      throw new Error('Firebase config not loaded. Ensure firebase-config.js is present.');
-    }
+    const weightUnit       = document.getElementById('weight-unit');
+    const userSelect       = document.getElementById('user-select');
+    const measurementDate  = document.getElementById('measurement-date');
+    const resultContainer  = document.getElementById('result');
+    const resultText       = document.getElementById('result-text');
+    const chartContainer   = document.getElementById('chart-container');
+    let startingWeightKg   = null;
 
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    async function saveWeightData(user, startKg, todayKg, changePct, date) {
-      try {
-        await addDoc(collection(db, 'weightData'), {
-          user: user,
-          date: date,
-          startWeight: startKg,
-          todayWeight: todayKg,
-          changePct: changePct
-        });
-      } catch (error) {
-        console.error('Error saving data:', error);
-      }
-    }
-
-
-    // Only return actual weights for the current user, and only percentage change for the other
-    async function loadWeightDataForPrivacy(currentUser) {
-      try {
-        const q = query(collection(db, 'weightData'), orderBy('date'));
-        const querySnapshot = await getDocs(q);
-        const data = [];
-        querySnapshot.forEach((doc) => {
-          const d = doc.data();
-          if (d.user === currentUser) {
-            data.push(d);
-          } else {
-            // Hide actual weights for the other user
-            data.push({
-              user: d.user,
-              date: d.date,
-              changePct: d.changePct
-            });
-          }
-        });
-        return data;
-      } catch (error) {
-        console.error('Error loading data:', error);
-        return [];
-      }
-    }
-
-    let weightChart = null;
-    const USERS = ['Sarah', 'Jay'];
-    // Sarah = pink, Jay = blue
-    const CHART_COLORS = {
-      Sarah: '#ff69b4', // pink
-      Jay: '#2196f3'    // blue
-    };
-
-    function plotChart(data) {
-      const ctx = document.getElementById('weightChart').getContext('2d');
-      const dateKeys = Array.from(new Set(data.map((entry) => entry.date.slice(0, 10))));
-      dateKeys.sort();
-      const labels = dateKeys.map((date) => new Date(date).toLocaleDateString());
-
-      const datasets = USERS.map((user) => {
-        const userEntries = data
-          .filter((entry) => entry.user === user)
-          .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-        const valuesByDate = userEntries.reduce((acc, entry) => {
-          const dateKey = entry.date.slice(0, 10);
-          acc[dateKey] = Math.round((100 + entry.changePct) * 10) / 10;
-          return acc;
-        function getMonday(date) {
-          const d = new Date(date);
-          const day = d.getDay();
-          const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
-          return new Date(d.setDate(diff));
-        }
-
-        function getWeekKey(date) {
-          const monday = getMonday(date);
-          return monday.toISOString().slice(0, 10);
-        }
-
-        function getWeeklyWinnersAndMissing(data) {
-          // Group by week, only consider entries on or after Monday of each week
-          const weeks = {};
-          data.forEach(entry => {
-            const week = getWeekKey(entry.date);
-            if (!weeks[week]) weeks[week] = {};
-            // Only count entries for the Monday of the week
-            const entryDate = new Date(entry.date);
-            const monday = getMonday(entry.date);
-            // Accept entries from Monday to Sunday of that week
-            if (entryDate >= monday && entryDate < new Date(monday.getTime() + 7 * 86400000)) {
-              weeks[week][entry.user] = entry;
-            }
-          });
-          // For each week, determine winner and missing
-          const results = {};
-          Object.entries(weeks).forEach(([week, users]) => {
-            let winner = null;
-            let missing = [];
-            if (users.Jay && users.Sarah) {
-              winner = users.Jay.changePct < users.Sarah.changePct ? 'Jay' : 'Sarah';
-            } else {
-              if (!users.Jay) missing.push('Jay');
-              if (!users.Sarah) missing.push('Sarah');
-            }
-            results[week] = { winner, missing };
-          });
-          return results;
-        }
-
-        function plotChart(data) {
-          const ctx = document.getElementById('weightChart').getContext('2d');
-          const dateKeys = Array.from(new Set(data.map((entry) => entry.date.slice(0, 10))));
-          dateKeys.sort();
-          const labels = dateKeys.map((date) => new Date(date).toLocaleDateString());
-
-          const datasets = USERS.map((user) => {
-            const userEntries = data
-              .filter((entry) => entry.user === user)
-              .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            const valuesByDate = userEntries.reduce((acc, entry) => {
-              const dateKey = entry.date.slice(0, 10);
-              acc[dateKey] = Math.round((100 + entry.changePct) * 10) / 10;
-              return acc;
-            }, {});
-
-            const userData = dateKeys.map((dateKey) => valuesByDate[dateKey] ?? null);
-
-            return {
-              label: user,
-              data: userData,
-              borderColor: CHART_COLORS[user],
-              backgroundColor: user === 'Sarah' ? 'rgba(255,105,180,0.15)' : 'rgba(33,150,243,0.15)',
-              tension: 0.35,
-              fill: false,
-              pointRadius: 4,
-              pointHoverRadius: 6
-            };
-          });
-
-          // Show weekly winner and missing entry messages above chart
-          const results = getWeeklyWinnersAndMissing(data);
-          let winnerHtml = '<div class="note-text" style="margin-bottom:10px;">';
-          Object.entries(results).forEach(([week, {winner, missing}]) => {
-            if (winner) {
-              winnerHtml += `<b>Week of ${week}:</b> Winner: <span style=\"color:${CHART_COLORS[winner]}\">${winner}</span><br/>`;
-            } else if (missing.length > 0) {
-              winnerHtml += `<b>Week of ${week}:</b> <span style=\"color:#ffb300\">${missing.join(' and ')} ha${missing.length > 1 ? 've' : 's'} not entered their weight this week</span><br/>`;
-            }
-          });
-          winnerHtml += '</div>';
-          let chartContainer = document.getElementById('chart-container');
-          chartContainer.insertAdjacentHTML('afterbegin', winnerHtml);
-
-          if (weightChart) {
-            weightChart.destroy();
-          }
-
-          weightChart = new Chart(ctx, {
-            type: 'line',
-            data: { labels: labels, datasets: datasets },
-            options: {
-              responsive: true,
-              plugins: {
-                legend: {
-                  position: 'top'
-                },
-                tooltip: {
-                  callbacks: {
-                    label: (context) => `${context.dataset.label}: ${context.parsed.y}%`
-                  }
-                }
-              },
-              scales: {
-                x: {
-                  title: {
-                    display: true,
-                    text: 'Date'
-                  }
-                },
-                y: {
-                  beginAtZero: false,
-                  suggestedMin: 80,
-                  suggestedMax: 110,
-                  title: {
-                    display: true,
-                    text: 'Relative Weight (%)'
-                  },
-                  ticks: {
-                    callback: (value) => `${value}%`
-                  }
-                }
-              }
-            }
-          });
-        }
-        return [];
-      }
-    }
-
-    async function loadStartingWeight(user) {
-      try {
-        const q = query(collection(db, 'startingWeight'), where('user', '==', user));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-          const doc = querySnapshot.docs[0];
-          return doc.data().weight;
-        } else {
-          return null;
-        }
-      } catch (error) {
-        console.error('Error loading starting weight:', error);
-        return null;
-      }
-    }
-
-    const weightUnit = document.getElementById('weight-unit');
-    const userSelect = document.getElementById('user-select');
-    const measurementDate = document.getElementById('measurement-date');
-    let startingWeightKg = null;
-
-    // Set date input to today
-    function setDateToToday() {
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      measurementDate.value = `${year}-${month}-${day}`;
-    }
-
-    setDateToToday();
+    measurementDate.value = todayISO();
 
     userSelect.addEventListener('change', async () => {
       startingWeightKg = await loadStartingWeight(userSelect.value);
     });
 
-    // Load starting weight on page load
-    (async () => {
-      startingWeightKg = await loadStartingWeight(userSelect.value);
-    })();
+    /* ── Unit‑field toggling ─────────────────────────── */
 
     function toggleUnitFields(unit) {
-      const stlb = document.getElementById('today-stlb');
-      const lb = document.getElementById('today-lb');
-      const kg = document.getElementById('today-kg');
-
-      stlb.hidden = unit !== 'st-lb';
-      lb.hidden = unit !== 'lb';
-      kg.hidden = unit !== 'kg';
+      document.getElementById('today-stlb').hidden = unit !== 'st-lb';
+      document.getElementById('today-lb').hidden   = unit !== 'lb';
+      document.getElementById('today-kg').hidden   = unit !== 'kg';
     }
 
     function clearHiddenFields(unit) {
-      if (unit !== 'st-lb') {
-        document.getElementById('today-stones').value = '';
-        document.getElementById('today-pounds').value = '';
-      }
-      if (unit !== 'lb') {
-        document.getElementById('today-pounds-only').value = '';
-      }
-      if (unit !== 'kg') {
-        document.getElementById('today-kilograms').value = '';
-      }
+      if (unit !== 'st-lb') { document.getElementById('today-stones').value = ''; document.getElementById('today-pounds').value = ''; }
+      if (unit !== 'lb')    { document.getElementById('today-pounds-only').value = ''; }
+      if (unit !== 'kg')    { document.getElementById('today-kilograms').value = ''; }
     }
 
     toggleUnitFields(weightUnit.value || 'st-lb');
     weightUnit.addEventListener('change', () => {
-      if (weightUnit.value) {
-        clearHiddenFields(weightUnit.value);
-        toggleUnitFields(weightUnit.value);
-      }
+      clearHiddenFields(weightUnit.value);
+      toggleUnitFields(weightUnit.value);
     });
 
-    function parseWeight() {
-      const unit = weightUnit.value;
-      if (unit === 'st-lb') {
-        const stones = parseFloat(document.getElementById('today-stones').value) || 0;
-        const pounds = parseFloat(document.getElementById('today-pounds').value) || 0;
-        return stones * 6.35029 + pounds * 0.45359237;
-      }
-      if (unit === 'lb') {
-        return (parseFloat(document.getElementById('today-pounds-only').value) || 0) * 0.45359237;
-      }
-      return parseFloat(document.getElementById('today-kilograms').value) || 0;
+    /* ── Calculate button ────────────────────────────── */
+
+    function showError(msg) {
+      resultContainer.hidden = false;
+      resultText.textContent = msg;
+      resultText.className = 'result-value';
+      chartContainer.hidden = true;
     }
 
     document.getElementById('calculate-btn').addEventListener('click', async () => {
       const user = userSelect.value;
-      const unit = weightUnit.value;
-      const resultContainer = document.getElementById('result');
-      const resultText = document.getElementById('result-text');
-      const chartContainer = document.getElementById('chart-container');
-
-      if (!user) {
-        resultContainer.hidden = false;
-        resultText.textContent = 'Please select a user.';
-        resultText.className = 'result-value';
-        chartContainer.hidden = true;
-        return;
-      }
-
-      if (!unit) {
-        resultContainer.hidden = false;
-        resultText.textContent = 'Please select input units.';
-        resultText.className = 'result-value';
-        chartContainer.hidden = true;
-        return;
-      }
+      if (!user)  return showError('Please select a user.');
+      if (!weightUnit.value) return showError('Please select input units.');
 
       if (!startingWeightKg || startingWeightKg <= 0) {
-        resultContainer.hidden = false;
-        resultText.textContent = 'No starting weight set. Go to Setup first.';
-        resultText.className = 'result-value';
-        chartContainer.hidden = true;
-        return;
+        startingWeightKg = await loadStartingWeight(user);
       }
+      if (!startingWeightKg || startingWeightKg <= 0) return showError('No starting weight set. Go to Setup first.');
 
-      const todayKg = parseWeight();
-      if (!todayKg || todayKg <= 0) {
-        resultContainer.hidden = false;
-        resultText.textContent = 'Enter a valid current weight.';
-        resultText.className = 'result-value';
-        chartContainer.hidden = true;
-        return;
-      }
+      const todayKg = parseWeightInputs(weightUnit.value, {
+        stones: 'today-stones', pounds: 'today-pounds',
+        poundsOnly: 'today-pounds-only', kg: 'today-kilograms'
+      });
+      if (!todayKg || todayKg <= 0) return showError('Enter a valid current weight.');
 
       const changePct = ((todayKg - startingWeightKg) / startingWeightKg) * 100;
       const formatted = Math.abs(changePct).toFixed(1);
@@ -435,14 +162,14 @@
       resultText.className = `result-value ${isLoss ? 'lost' : 'gained'}`;
       resultContainer.hidden = false;
 
-      // Save data with measurement date
-      const selectedDate = measurementDate.value ? new Date(measurementDate.value).toISOString() : new Date().toISOString();
-      await saveWeightData(user, startingWeightKg, todayKg, changePct, selectedDate);
+      const selectedDate = measurementDate.value
+        ? new Date(measurementDate.value).toISOString()
+        : new Date().toISOString();
+      await saveWeight(user, startingWeightKg, todayKg, changePct, selectedDate);
 
-      // Load and plot both users on the chart, but only show actual weights for current user
-      const data = await loadWeightDataForPrivacy(user);
-      if (data.length > 0) {
-        plotChart(data);
+      const data = await loadWeightData(user);
+      if (data.length) {
+        renderChart('weightChart', data, chartContainer);
         chartContainer.hidden = false;
       } else {
         chartContainer.hidden = true;
