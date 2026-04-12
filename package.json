@@ -1,0 +1,12 @@
+{
+  "name": "portfolio-repo",
+  "version": "1.0.0",
+  "private": true,
+  "devDependencies": {
+    "sass": "^1.73.1"
+  },
+  "scripts": {
+    "build:sass": "sass --no-source-map weight/weightcalc.scss:weight/weightcalc.css",
+    "watch:sass": "sass --watch weight/weightcalc.scss:weight/weightcalc.css"
+  }
+}

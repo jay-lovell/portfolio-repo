@@ -1,0 +1,228 @@
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap');
+
+:root {
+  color-scheme: dark;
+  font-family: 'Ubuntu', Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: #040403;
+  color: #f5f5f5;
+  accent-color: #5fd3b9;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: radial-gradient(circle at top, rgba(95,211,185,0.18), transparent 35%), radial-gradient(circle at bottom right, rgba(255,255,255,0.08), transparent 25%), #040403;
+  text-rendering: optimizeLegibility;
+}
+
+.page-shell {
+  position: relative;
+  overflow: hidden;
+  width: min(100%, 560px);
+  background: rgba(15, 16, 19, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.35);
+  padding: 26px;
+}
+
+.brand-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 18px;
+  margin-bottom: 26px;
+  text-align: left;
+}
+
+.brand-bar h1 {
+  font-size: 1.55rem;
+  line-height: 1.1;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.brand-logo-wrap {
+  display: grid;
+  place-items: center;
+  width: 90px;
+  height: 90px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(95,211,185,0.12);
+  border: 1px solid rgba(95,211,185,0.22);
+  box-shadow: 0 18px 45px rgba(95,211,185,0.08);
+}
+
+.brand-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.intro {
+  color: #d9d9d9;
+  font-size: 0.96rem;
+  margin-top: 8px;
+  margin-bottom: 22px;
+  line-height: 1.6;
+}
+
+.unit-switcher {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.unit-switcher label {
+  color: #cdd6f4;
+  font-size: 0.95rem;
+}
+
+.unit-switcher select {
+  border-radius: 16px;
+  padding: 16px 16px;
+}
+
+.input-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.weight-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 22px;
+}
+
+.weight-card h2 {
+  font-size: 1rem;
+  margin-bottom: 14px;
+  color: #f5f5f5;
+}
+
+.field-group {
+  display: grid;
+  gap: 16px;
+  text-align: left;
+}
+
+.field-group label {
+  font-size: 0.95rem;
+  color: #cdd6f4;
+}
+
+.row {
+  display: grid;
+  gap: 12px;
+}
+
+.row.columns-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+input,
+select,
+button {
+  width: 100%;
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.05);
+  color: #f4f4f4;
+  font-size: 1rem;
+  padding: 14px 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input:focus,
+select:focus,
+button:focus {
+  outline: none;
+  border-color: #5fd3b9;
+  box-shadow: 0 0 0 4px rgba(95,211,185,0.16);
+}
+
+select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #f4f4f4 50%), linear-gradient(135deg, #f4f4f4 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(1em + 2px), calc(100% - 14px) calc(1em + 2px);
+  background-size: 8px 8px, 8px 8px;
+  background-repeat: no-repeat;
+  padding-right: 42px;
+}
+
+.small-input {
+  min-width: 0;
+}
+
+.note-text {
+  font-size: 0.88rem;
+  color: #98a0b8;
+}
+
+.calculate-button {
+  margin-top: 22px;
+  width: 100%;
+  background: linear-gradient(135deg, #5fd3b9, #39a0c5);
+  border-color: transparent;
+  color: #040403;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  padding: 16px 20px;
+}
+
+.calculate-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 40px rgba(95,211,185,0.18);
+}
+
+.result-box {
+  margin-top: 24px;
+  padding: 22px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.result-copy {
+  color: #cbd6ff;
+  margin-bottom: 10px;
+  font-size: 0.96rem;
+}
+
+.result-value {
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.result-value.lost {
+  color: #7de27d;
+}
+
+.result-value.gained {
+  color: #ff7b7b;
+}
+
+@media (max-width: 480px) {
+  .brand-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .row.columns-2 {
+    grid-template-columns: 1fr;
+  }
+}
