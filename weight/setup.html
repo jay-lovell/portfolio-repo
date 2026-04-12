@@ -73,20 +73,16 @@
     </div>
   </main>
 
+  <script src="./firebase-config.js"></script>
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
     import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
-    // Firebase configuration - loaded from environment variables
-    const firebaseConfig = {
-      apiKey: "__FIREBASE_API_KEY__",
-      authDomain: "__FIREBASE_AUTH_DOMAIN__",
-      projectId: "__FIREBASE_PROJECT_ID__",
-      storageBucket: "__FIREBASE_STORAGE_BUCKET__",
-      messagingSenderId: "__FIREBASE_MESSAGING_SENDER_ID__",
-      appId: "__FIREBASE_APP_ID__",
-      measurementId: "__FIREBASE_MEASUREMENT_ID__"
-    };
+    // Firebase configuration - loaded from generated config file
+    const firebaseConfig = window.firebaseConfig;
+    if (!firebaseConfig || !firebaseConfig.projectId) {
+      throw new Error('Firebase config not loaded. Ensure firebase-config.js is present.');
+    }
 
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
