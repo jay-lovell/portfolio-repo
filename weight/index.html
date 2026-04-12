@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <link rel="stylesheet" href="../main.css" />
   <link rel="stylesheet" href="./weightcalc.css" />
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+    import { getFirestore, collection, addDoc, getDocs, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <title>PRESC Weight Change Calculator</title>
 </head>
 <body>
@@ -25,6 +30,14 @@
         <option value="st-lb">Stones & Pounds</option>
         <option value="lb">Pounds</option>
         <option value="kg">Kilograms</option>
+      </select>
+    </div>
+
+    <div class="unit-switcher">
+      <label for="user-select">Select User</label>
+      <select id="user-select" aria-label="Select user">
+        <option value="Sarah">Sarah</option>
+        <option value="Jay">Jay</option>
       </select>
     </div>
 
@@ -88,9 +101,82 @@
       <p class="result-copy">Cumulative change from your starting weight</p>
       <p id="result-text" class="result-value"></p>
     </div>
+
+    <div id="chart-container" class="result-box" hidden>
+      <canvas id="weightChart"></canvas>
+    </div>
   </main>
 
   <script>
+    // Firebase configuration - Replace with your own Firebase project config
+    const firebaseConfig = {
+      apiKey: "your-api-key",
+      authDomain: "your-project.firebaseapp.com",
+      projectId: "your-project-id",
+      storageBucket: "your-project.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "your-app-id"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function saveWeightData(user, startKg, todayKg, changePct) {
+      try {
+        await addDoc(collection(db, 'weightData'), {
+          user: user,
+          date: new Date().toISOString(),
+          startWeight: startKg,
+          todayWeight: todayKg,
+          changePct: changePct
+        });
+      } catch (error) {
+        console.error('Error saving data:', error);
+      }
+    }
+
+    async function loadWeightData(user) {
+      try {
+        const q = query(collection(db, 'weightData'), where('user', '==', user), orderBy('date'));
+        const querySnapshot = await getDocs(q);
+        const data = [];
+        querySnapshot.forEach((doc) => {
+          data.push(doc.data());
+        });
+        return data;
+      } catch (error) {
+        console.error('Error loading data:', error);
+        return [];
+      }
+    }
+
+    function plotChart(data) {
+      const ctx = document.getElementById('weightChart').getContext('2d');
+      const labels = data.map(d => new Date(d.date).toLocaleDateString());
+      const values = data.map(d => d.changePct);
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Weight Change %',
+            data: values,
+            borderColor: '#5fd3b9',
+            backgroundColor: 'rgba(95,211,185,0.1)',
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
     const weightUnit = document.getElementById('weight-unit');
     const prefixes = ['start', 'today'];
 
@@ -140,16 +226,19 @@
       return parseFloat(document.getElementById(`${prefix}-kilograms`).value) || 0;
     }
 
-    document.getElementById('calculate-btn').addEventListener('click', () => {
+    document.getElementById('calculate-btn').addEventListener('click', async () => {
       const startKg = parseWeight('start');
       const todayKg = parseWeight('today');
       const resultContainer = document.getElementById('result');
       const resultText = document.getElementById('result-text');
+      const chartContainer = document.getElementById('chart-container');
+      const user = document.getElementById('user-select').value;
 
       if (!startKg || startKg <= 0 || !todayKg || todayKg <= 0) {
         resultContainer.hidden = false;
         resultText.textContent = 'Enter valid weights in both fields.';
         resultText.className = 'result-value';
+        chartContainer.hidden = true;
         return;
       }
 
@@ -161,6 +250,18 @@
         : `GAINED ${formatted}% of your starting weight`;
       resultText.className = `result-value ${isLoss ? 'lost' : 'gained'}`;
       resultContainer.hidden = false;
+
+      // Save data
+      await saveWeightData(user, startKg, todayKg, changePct);
+
+      // Load and plot chart
+      const data = await loadWeightData(user);
+      if (data.length > 0) {
+        plotChart(data);
+        chartContainer.hidden = false;
+      } else {
+        chartContainer.hidden = true;
+      }
     });
   </script>
 </body>
