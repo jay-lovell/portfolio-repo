@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <link rel="stylesheet" href="../main.css" />
+  <link rel="stylesheet" href="./weightcalc.css" />
+  <title>PRESC Weight Setup</title>
+</head>
+<body>
+  <main class="page-shell" aria-label="Weight setup">
+    <section class="brand-bar">
+      <div class="brand-logo-wrap">
+        <img src="../images/presc-logo.jpeg" alt="PRESC logo" class="brand-logo" />
+      </div>
+      <div>
+        <h1>PRESC Weight Setup</h1>
+        <p class="intro">Set your starting weight to begin tracking</p>
+      </div>
+    </section>
+
+    <div class="unit-switcher">
+      <label for="user-select">Select User</label>
+      <select id="user-select" aria-label="Select user" required>
+        <option value="" disabled selected>Please select</option>
+        <option value="Sarah">Sarah</option>
+        <option value="Jay">Jay</option>
+      </select>
+    </div>
+
+    <div class="unit-switcher">
+      <label for="weight-unit">Weight Units</label>
+      <select id="weight-unit" aria-label="Weight units" required>
+        <option value="st-lb" selected>Stones & Pounds</option>
+        <option value="lb">Pounds</option>
+        <option value="kg">Kilograms</option>
+      </select>
+    </div>
+
+    <section class="input-grid">
+      <div class="weight-card">
+        <h2>Starting Weight</h2>
+        <div class="field-group">
+          <div id="start-stlb" class="row columns-2">
+            <div>
+              <label for="start-stones">Stones</label>
+              <input id="start-stones" type="number" min="0" step="1" inputmode="numeric" placeholder="st" />
+            </div>
+            <div>
+              <label for="start-pounds">Pounds</label>
+              <input id="start-pounds" type="number" min="0" step="0.1" inputmode="decimal" placeholder="lb" />
+            </div>
+          </div>
+
+          <div id="start-lb" class="field-group" hidden>
+            <label for="start-pounds-only">Pounds</label>
+            <input id="start-pounds-only" type="number" min="0" step="0.1" inputmode="decimal" placeholder="lbs" />
+          </div>
+
+          <div id="start-kg" class="field-group" hidden>
+            <label for="start-kilograms">Kilograms</label>
+            <input id="start-kilograms" type="number" min="0" step="0.1" inputmode="decimal" placeholder="kg" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <button class="calculate-button" id="save-btn" type="button">Save Starting Weight</button>
+    <a href="./index.html" class="calculate-button" style="text-decoration: none; display: block; text-align: center; margin-top: 12px;">Go to Calculator</a>
+
+    <div id="result" class="result-box" hidden>
+      <p id="result-text" class="result-value"></p>
+    </div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+    import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+    // Firebase configuration - Replace with your own Firebase project config
+    const firebaseConfig = {
+      apiKey: "your-api-key",
+      authDomain: "your-project.firebaseapp.com",
+      projectId: "your-project-id",
+      storageBucket: "your-project.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "your-app-id"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const weightUnit = document.getElementById('weight-unit');
+    const userSelect = document.getElementById('user-select');
+
+    function toggleUnitFields(unit) {
+      const stlb = document.getElementById('start-stlb');
+      const lb = document.getElementById('start-lb');
+      const kg = document.getElementById('start-kg');
+
+      stlb.hidden = unit !== 'st-lb';
+      lb.hidden = unit !== 'lb';
+      kg.hidden = unit !== 'kg';
+    }
+
+    function clearFields(unit) {
+      if (unit !== 'st-lb') {
+        document.getElementById('start-stones').value = '';
+        document.getElementById('start-pounds').value = '';
+      }
+      if (unit !== 'lb') {
+        document.getElementById('start-pounds-only').value = '';
+      }
+      if (unit !== 'kg') {
+        document.getElementById('start-kilograms').value = '';
+      }
+    }
+
+    function parseWeight() {
+      const unit = weightUnit.value;
+      if (unit === 'st-lb') {
+        const stones = parseFloat(document.getElementById('start-stones').value) || 0;
+        const pounds = parseFloat(document.getElementById('start-pounds').value) || 0;
+        return stones * 6.35029 + pounds * 0.45359237;
+      }
+      if (unit === 'lb') {
+        return (parseFloat(document.getElementById('start-pounds-only').value) || 0) * 0.45359237;
+      }
+      return parseFloat(document.getElementById('start-kilograms').value) || 0;
+    }
+
+    toggleUnitFields(weightUnit.value || 'st-lb');
+    
+    weightUnit.addEventListener('change', () => {
+      if (weightUnit.value) {
+        clearFields(weightUnit.value);
+        toggleUnitFields(weightUnit.value);
+      }
+    });
+
+    document.getElementById('save-btn').addEventListener('click', async () => {
+      const user = userSelect.value;
+      const unit = weightUnit.value;
+      const startKg = parseWeight();
+      const resultContainer = document.getElementById('result');
+      const resultText = document.getElementById('result-text');
+
+      if (!user) {
+        resultContainer.hidden = false;
+        resultText.textContent = 'Please select a user.';
+        resultText.className = 'result-value';
+        return;
+      }
+
+      if (!unit) {
+        resultContainer.hidden = false;
+        resultText.textContent = 'Please select weight units.';
+        resultText.className = 'result-value';
+        return;
+      }
+
+      if (!startKg || startKg <= 0) {
+        resultContainer.hidden = false;
+        resultText.textContent = 'Enter a valid starting weight.';
+        resultText.className = 'result-value';
+        return;
+      }
+
+      try {
+        // Check if user already has a starting weight, delete it
+        const q = query(collection(db, 'startingWeight'), where('user', '==', user));
+        const querySnapshot = await getDocs(q);
+        for (const doc of querySnapshot.docs) {
+          await deleteDoc(doc.ref);
+        }
+
+        // Save new starting weight
+        await addDoc(collection(db, 'startingWeight'), {
+          user: user,
+          weight: startKg,
+          unit: weightUnit.value,
+          date: new Date().toISOString()
+        });
+
+        resultContainer.hidden = false;
+        resultText.textContent = '✓ Starting weight saved!';
+        resultText.className = 'result-value lost';
+      } catch (error) {
+        console.error('Error saving starting weight:', error);
+        resultContainer.hidden = false;
+        resultText.textContent = 'Error saving weight. Try again.';
+        resultText.className = 'result-value gained';
+      }
+    });
+  </script>
+</body>
+</html>
