@@ -26,7 +26,7 @@ export const db = getFirestore(app);
 
 /* ── Constants ──────────────────────────────────────── */
 
-export const USERS   = ['Jay', 'Sarah'];
+export const USERS   = ['Sarah', 'Jay'];
 export const COLORS  = { Jay: '#2196f3', Sarah: '#ff69b4' };
 const MS_PER_WEEK    = 7 * 86_400_000;
 
@@ -101,19 +101,24 @@ export function weeklyResults(data) {
 
   const sortedWeeks = Object.keys(weeks).sort();
 
-  return sortedWeeks.map(wk => {
-    const users = weeks[wk];
+  return sortedWeeks.map((wk, i) => {
+    const users  = weeks[wk];
+    const prevWk = i > 0 ? weeks[sortedWeeks[i - 1]] : null;
 
-    // changePct is already relative to each user's original starting weight
+    // Weekly delta: changePct this week minus last week = % of starting weight lost this specific week
+    // changePct is negative when weight is lost, so a more-negative delta = more lost this week
     const weeklyPct = {};
     USERS.forEach(u => {
-      if (users[u]) weeklyPct[u] = users[u].changePct;
+      if (users[u]) {
+        const prevPct  = prevWk?.[u]?.changePct ?? 0;
+        weeklyPct[u]   = users[u].changePct - prevPct;
+      }
     });
 
     const missing = USERS.filter(u => !users[u]);
     let winner = null;
     if (missing.length === 0 && weeklyPct.Jay !== weeklyPct.Sarah) {
-      // Lower changePct = more weight lost from start = winner
+      // Lower (more negative) delta = more weight lost this week = winner
       winner = weeklyPct.Jay < weeklyPct.Sarah ? 'Jay' : 'Sarah';
     }
 
