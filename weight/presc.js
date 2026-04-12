@@ -224,6 +224,28 @@ export function renderWeeklyBarChart(canvasId, results) {
   const completedWeeks = results.filter(r => r.missing.length === 0);
   const labels = completedWeeks.map(r => r.week);
 
+  // Custom plugin: draw a crown emoji above the winning bar each week
+  const crownPlugin = {
+    id: 'crownPlugin',
+    afterDraw(chart) {
+      const c = chart.ctx;
+      chart.data.datasets.forEach((dataset, datasetIndex) => {
+        const meta = chart.getDatasetMeta(datasetIndex);
+        meta.data.forEach((bar, dataIndex) => {
+          const week = completedWeeks[dataIndex];
+          if (week && week.winner === USERS[datasetIndex]) {
+            c.save();
+            c.font = '14px serif';
+            c.textAlign = 'center';
+            c.textBaseline = 'bottom';
+            c.fillText('👑', bar.x, bar.y - 2);
+            c.restore();
+          }
+        });
+      });
+    }
+  };
+
   if (weeklyChartInstance) weeklyChartInstance.destroy();
 
   weeklyChartInstance = new Chart(ctx, {
@@ -245,6 +267,7 @@ export function renderWeeklyBarChart(canvasId, results) {
     },
     options: {
       responsive: true,
+      layout: { padding: { top: 24 } },
       plugins: {
         legend: { position: 'top' },
         tooltip: {
@@ -260,7 +283,8 @@ export function renderWeeklyBarChart(canvasId, results) {
           ticks: { callback: v => `${v}%` }
         }
       }
-    }
+    },
+    plugins: [crownPlugin]
   });
 }
 
