@@ -6,8 +6,7 @@
   <link rel="stylesheet" href="../main.css" />
   <link rel="stylesheet" href="./weightcalc.css" />
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
-    import { getFirestore, collection, addDoc, getDocs, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+    window.firebaseImports = {};
   </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <title>PRESC Weight Change Calculator</title>
@@ -41,32 +40,14 @@
       </select>
     </div>
 
+    <div class="unit-switcher">
+      <label for="measurement-date">Measurement Date</label>
+      <input id="measurement-date" type="date" />
+    </div>
+
+    <a href="./setup.html" class="note-text" style="display: block; color: #5fd3b9; text-decoration: none; margin-bottom: 16px;">→ Update Starting Weight</a>
+
     <section class="input-grid">
-      <div class="weight-card">
-        <h2>Starting Weight</h2>
-        <div class="field-group">
-          <div id="start-stlb" class="row columns-2">
-            <div>
-              <label for="start-stones">Stones</label>
-              <input id="start-stones" type="number" min="0" step="1" inputmode="numeric" placeholder="st" />
-            </div>
-            <div>
-              <label for="start-pounds">Pounds</label>
-              <input id="start-pounds" type="number" min="0" step="0.1" inputmode="decimal" placeholder="lb" />
-            </div>
-          </div>
-
-          <div id="start-lb" class="field-group" hidden>
-            <label for="start-pounds-only">Pounds</label>
-            <input id="start-pounds-only" type="number" min="0" step="0.1" inputmode="decimal" placeholder="lbs" />
-          </div>
-
-          <div id="start-kg" class="field-group" hidden>
-            <label for="start-kilograms">Kilograms</label>
-            <input id="start-kilograms" type="number" min="0" step="0.1" inputmode="decimal" placeholder="kg" />
-          </div>
-        </div>
-      </div>
 
       <div class="weight-card">
         <h2>Today's Weight</h2>
@@ -107,7 +88,10 @@
     </div>
   </main>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+    import { getFirestore, collection, addDoc, getDocs, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
     // Firebase configuration - Replace with your own Firebase project config
     const firebaseConfig = {
       apiKey: "your-api-key",
@@ -122,11 +106,11 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    async function saveWeightData(user, startKg, todayKg, changePct) {
+    async function saveWeightData(user, startKg, todayKg, changePct, date) {
       try {
         await addDoc(collection(db, 'weightData'), {
           user: user,
-          date: new Date().toISOString(),
+          date: date,
           startWeight: startKg,
           todayWeight: todayKg,
           changePct: changePct
@@ -177,34 +161,69 @@
         }
       });
     }
+
+    async function loadStartingWeight(user) {
+      try {
+        const q = query(collection(db, 'startingWeight'), where('user', '==', user));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          const doc = querySnapshot.docs[0];
+          return doc.data().weight;
+        } else {
+          return null;
+        }
+      } catch (error) {
+        console.error('Error loading starting weight:', error);
+        return null;
+      }
+    }
+
     const weightUnit = document.getElementById('weight-unit');
-    const prefixes = ['start', 'today'];
+    const userSelect = document.getElementById('user-select');
+    const measurementDate = document.getElementById('measurement-date');
+    let startingWeightKg = null;
+
+    // Set date input to today
+    function setDateToToday() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      measurementDate.value = `${year}-${month}-${day}`;
+    }
+
+    setDateToToday();
+
+    userSelect.addEventListener('change', async () => {
+      startingWeightKg = await loadStartingWeight(userSelect.value);
+    });
+
+    // Load starting weight on page load
+    (async () => {
+      startingWeightKg = await loadStartingWeight(userSelect.value);
+    })();
 
     function toggleUnitFields(unit) {
-      prefixes.forEach(prefix => {
-        const stlb = document.getElementById(`${prefix}-stlb`);
-        const lb = document.getElementById(`${prefix}-lb`);
-        const kg = document.getElementById(`${prefix}-kg`);
+      const stlb = document.getElementById('today-stlb');
+      const lb = document.getElementById('today-lb');
+      const kg = document.getElementById('today-kg');
 
-        stlb.hidden = unit !== 'st-lb';
-        lb.hidden = unit !== 'lb';
-        kg.hidden = unit !== 'kg';
-      });
+      stlb.hidden = unit !== 'st-lb';
+      lb.hidden = unit !== 'lb';
+      kg.hidden = unit !== 'kg';
     }
 
     function clearHiddenFields(unit) {
-      prefixes.forEach(prefix => {
-        if (unit !== 'st-lb') {
-          document.getElementById(`${prefix}-stones`).value = '';
-          document.getElementById(`${prefix}-pounds`).value = '';
-        }
-        if (unit !== 'lb') {
-          document.getElementById(`${prefix}-pounds-only`).value = '';
-        }
-        if (unit !== 'kg') {
-          document.getElementById(`${prefix}-kilograms`).value = '';
-        }
-      });
+      if (unit !== 'st-lb') {
+        document.getElementById('today-stones').value = '';
+        document.getElementById('today-pounds').value = '';
+      }
+      if (unit !== 'lb') {
+        document.getElementById('today-pounds-only').value = '';
+      }
+      if (unit !== 'kg') {
+        document.getElementById('today-kilograms').value = '';
+      }
     }
 
     toggleUnitFields(weightUnit.value);
@@ -213,36 +232,43 @@
       toggleUnitFields(weightUnit.value);
     });
 
-    function parseWeight(prefix) {
+    function parseWeight() {
       const unit = weightUnit.value;
       if (unit === 'st-lb') {
-        const stones = parseFloat(document.getElementById(`${prefix}-stones`).value) || 0;
-        const pounds = parseFloat(document.getElementById(`${prefix}-pounds`).value) || 0;
+        const stones = parseFloat(document.getElementById('today-stones').value) || 0;
+        const pounds = parseFloat(document.getElementById('today-pounds').value) || 0;
         return stones * 6.35029 + pounds * 0.45359237;
       }
       if (unit === 'lb') {
-        return (parseFloat(document.getElementById(`${prefix}-pounds-only`).value) || 0) * 0.45359237;
+        return (parseFloat(document.getElementById('today-pounds-only').value) || 0) * 0.45359237;
       }
-      return parseFloat(document.getElementById(`${prefix}-kilograms`).value) || 0;
+      return parseFloat(document.getElementById('today-kilograms').value) || 0;
     }
 
     document.getElementById('calculate-btn').addEventListener('click', async () => {
-      const startKg = parseWeight('start');
-      const todayKg = parseWeight('today');
+      const todayKg = parseWeight();
       const resultContainer = document.getElementById('result');
       const resultText = document.getElementById('result-text');
       const chartContainer = document.getElementById('chart-container');
-      const user = document.getElementById('user-select').value;
+      const user = userSelect.value;
 
-      if (!startKg || startKg <= 0 || !todayKg || todayKg <= 0) {
+      if (!startingWeightKg || startingWeightKg <= 0) {
         resultContainer.hidden = false;
-        resultText.textContent = 'Enter valid weights in both fields.';
+        resultText.textContent = 'No starting weight set. Go to Setup first.';
         resultText.className = 'result-value';
         chartContainer.hidden = true;
         return;
       }
 
-      const changePct = ((todayKg - startKg) / startKg) * 100;
+      if (!todayKg || todayKg <= 0) {
+        resultContainer.hidden = false;
+        resultText.textContent = 'Enter a valid current weight.';
+        resultText.className = 'result-value';
+        chartContainer.hidden = true;
+        return;
+      }
+
+      const changePct = ((todayKg - startingWeightKg) / startingWeightKg) * 100;
       const formatted = Math.abs(changePct).toFixed(1);
       const isLoss = changePct < 0;
       resultText.textContent = isLoss
@@ -251,8 +277,9 @@
       resultText.className = `result-value ${isLoss ? 'lost' : 'gained'}`;
       resultContainer.hidden = false;
 
-      // Save data
-      await saveWeightData(user, startKg, todayKg, changePct);
+      // Save data with measurement date
+      const selectedDate = measurementDate.value ? new Date(measurementDate.value).toISOString() : new Date().toISOString();
+      await saveWeightData(user, startingWeightKg, todayKg, changePct, selectedDate);
 
       // Load and plot chart
       const data = await loadWeightData(user);
