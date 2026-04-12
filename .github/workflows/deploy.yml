@@ -29,27 +29,20 @@ jobs:
       
       - name: Generate Firebase config
         run: |
-          python - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-
-          config = {
-              'apiKey': os.environ['FIREBASE_API_KEY'],
-              'authDomain': os.environ['FIREBASE_AUTH_DOMAIN'],
-              'projectId': os.environ['FIREBASE_PROJECT_ID'],
-              'storageBucket': os.environ['FIREBASE_STORAGE_BUCKET'],
-              'messagingSenderId': os.environ['FIREBASE_MESSAGING_SENDER_ID'],
-              'appId': os.environ['FIREBASE_APP_ID'],
-              'measurementId': os.environ['FIREBASE_MEASUREMENT_ID'],
-          }
-
-          path = Path('weight/firebase-config.js')
-          path.parent.mkdir(parents=True, exist_ok=True)
-          path.write_text(f"window.firebaseConfig = {json.dumps(config, indent=2)};\n", encoding='utf-8')
-          print('WROTE', path)
-          print(path.read_text())
-          PY
+          node -e "const fs = require('fs');
+          const config = {
+            apiKey: process.env.FIREBASE_API_KEY,
+            authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+            messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+            appId: process.env.FIREBASE_APP_ID,
+            measurementId: process.env.FIREBASE_MEASUREMENT_ID
+          };
+          fs.mkdirSync('weight', { recursive: true });
+          fs.writeFileSync('weight/firebase-config.js', 'window.firebaseConfig = ' + JSON.stringify(config, null, 2) + ';\n');
+          console.log('WROTE weight/firebase-config.js');
+          console.log(fs.readFileSync('weight/firebase-config.js', 'utf-8'));"
 
       - name: Verify firebase config file
         run: |

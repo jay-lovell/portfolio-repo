@@ -118,13 +118,25 @@
       }
     }
 
-    async function loadWeightData(user) {
+
+    // Only return actual weights for the current user, and only percentage change for the other
+    async function loadWeightDataForPrivacy(currentUser) {
       try {
-        const q = query(collection(db, 'weightData'), where('user', '==', user), orderBy('date'));
+        const q = query(collection(db, 'weightData'), orderBy('date'));
         const querySnapshot = await getDocs(q);
         const data = [];
         querySnapshot.forEach((doc) => {
-          data.push(doc.data());
+          const d = doc.data();
+          if (d.user === currentUser) {
+            data.push(d);
+          } else {
+            // Hide actual weights for the other user
+            data.push({
+              user: d.user,
+              date: d.date,
+              changePct: d.changePct
+            });
+          }
         });
         return data;
       } catch (error) {
@@ -133,31 +145,159 @@
       }
     }
 
+    let weightChart = null;
+    const USERS = ['Sarah', 'Jay'];
+    // Sarah = pink, Jay = blue
+    const CHART_COLORS = {
+      Sarah: '#ff69b4', // pink
+      Jay: '#2196f3'    // blue
+    };
+
     function plotChart(data) {
       const ctx = document.getElementById('weightChart').getContext('2d');
-      const labels = data.map(d => new Date(d.date).toLocaleDateString());
-      const values = data.map(d => d.changePct);
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Weight Change %',
-            data: values,
-            borderColor: '#5fd3b9',
-            backgroundColor: 'rgba(95,211,185,0.1)',
-            fill: true
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
+      const dateKeys = Array.from(new Set(data.map((entry) => entry.date.slice(0, 10))));
+      dateKeys.sort();
+      const labels = dateKeys.map((date) => new Date(date).toLocaleDateString());
+
+      const datasets = USERS.map((user) => {
+        const userEntries = data
+          .filter((entry) => entry.user === user)
+          .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        const valuesByDate = userEntries.reduce((acc, entry) => {
+          const dateKey = entry.date.slice(0, 10);
+          acc[dateKey] = Math.round((100 + entry.changePct) * 10) / 10;
+          return acc;
+        function getMonday(date) {
+          const d = new Date(date);
+          const day = d.getDay();
+          const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+          return new Date(d.setDate(diff));
         }
-      });
+
+        function getWeekKey(date) {
+          const monday = getMonday(date);
+          return monday.toISOString().slice(0, 10);
+        }
+
+        function getWeeklyWinnersAndMissing(data) {
+          // Group by week, only consider entries on or after Monday of each week
+          const weeks = {};
+          data.forEach(entry => {
+            const week = getWeekKey(entry.date);
+            if (!weeks[week]) weeks[week] = {};
+            // Only count entries for the Monday of the week
+            const entryDate = new Date(entry.date);
+            const monday = getMonday(entry.date);
+            // Accept entries from Monday to Sunday of that week
+            if (entryDate >= monday && entryDate < new Date(monday.getTime() + 7 * 86400000)) {
+              weeks[week][entry.user] = entry;
+            }
+          });
+          // For each week, determine winner and missing
+          const results = {};
+          Object.entries(weeks).forEach(([week, users]) => {
+            let winner = null;
+            let missing = [];
+            if (users.Jay && users.Sarah) {
+              winner = users.Jay.changePct < users.Sarah.changePct ? 'Jay' : 'Sarah';
+            } else {
+              if (!users.Jay) missing.push('Jay');
+              if (!users.Sarah) missing.push('Sarah');
+            }
+            results[week] = { winner, missing };
+          });
+          return results;
+        }
+
+        function plotChart(data) {
+          const ctx = document.getElementById('weightChart').getContext('2d');
+          const dateKeys = Array.from(new Set(data.map((entry) => entry.date.slice(0, 10))));
+          dateKeys.sort();
+          const labels = dateKeys.map((date) => new Date(date).toLocaleDateString());
+
+          const datasets = USERS.map((user) => {
+            const userEntries = data
+              .filter((entry) => entry.user === user)
+              .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            const valuesByDate = userEntries.reduce((acc, entry) => {
+              const dateKey = entry.date.slice(0, 10);
+              acc[dateKey] = Math.round((100 + entry.changePct) * 10) / 10;
+              return acc;
+            }, {});
+
+            const userData = dateKeys.map((dateKey) => valuesByDate[dateKey] ?? null);
+
+            return {
+              label: user,
+              data: userData,
+              borderColor: CHART_COLORS[user],
+              backgroundColor: user === 'Sarah' ? 'rgba(255,105,180,0.15)' : 'rgba(33,150,243,0.15)',
+              tension: 0.35,
+              fill: false,
+              pointRadius: 4,
+              pointHoverRadius: 6
+            };
+          });
+
+          // Show weekly winner and missing entry messages above chart
+          const results = getWeeklyWinnersAndMissing(data);
+          let winnerHtml = '<div class="note-text" style="margin-bottom:10px;">';
+          Object.entries(results).forEach(([week, {winner, missing}]) => {
+            if (winner) {
+              winnerHtml += `<b>Week of ${week}:</b> Winner: <span style=\"color:${CHART_COLORS[winner]}\">${winner}</span><br/>`;
+            } else if (missing.length > 0) {
+              winnerHtml += `<b>Week of ${week}:</b> <span style=\"color:#ffb300\">${missing.join(' and ')} ha${missing.length > 1 ? 've' : 's'} not entered their weight this week</span><br/>`;
+            }
+          });
+          winnerHtml += '</div>';
+          let chartContainer = document.getElementById('chart-container');
+          chartContainer.insertAdjacentHTML('afterbegin', winnerHtml);
+
+          if (weightChart) {
+            weightChart.destroy();n+      }
+
+          weightChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: labels, datasets: datasets },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: {
+                  position: 'top'
+                },
+                tooltip: {
+                  callbacks: {
+                    label: (context) => `${context.dataset.label}: ${context.parsed.y}%`
+                  }
+                }
+              },
+              scales: {
+                x: {
+                  title: {
+                    display: true,
+                    text: 'Date'
+                  }
+                },
+                y: {
+                  beginAtZero: false,
+                  suggestedMin: 80,
+                  suggestedMax: 110,
+                  title: {
+                    display: true,
+                    text: 'Relative Weight (%)'
+                  },
+                  ticks: {
+                    callback: (value) => `${value}%`
+                  }
+                }
+              }
+            }
+          });
+        }
+        return [];
+      }
     }
 
     async function loadStartingWeight(user) {
@@ -298,8 +438,8 @@
       const selectedDate = measurementDate.value ? new Date(measurementDate.value).toISOString() : new Date().toISOString();
       await saveWeightData(user, startingWeightKg, todayKg, changePct, selectedDate);
 
-      // Load and plot chart
-      const data = await loadWeightData(user);
+      // Load and plot both users on the chart, but only show actual weights for current user
+      const data = await loadWeightDataForPrivacy(user);
       if (data.length > 0) {
         plotChart(data);
         chartContainer.hidden = false;
