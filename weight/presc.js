@@ -11,14 +11,15 @@ import {
 
 /* ── Firebase bootstrap ─────────────────────────────── */
 
-const firebaseConfig = window.firebaseConfig;
-if (!firebaseConfig || !firebaseConfig.projectId) {
-  document.body.innerHTML =
-    '<p style="color:#ff7b7b;text-align:center;margin-top:40vh">' +
-    'Firebase config could not be loaded.<br>Please try refreshing the page.' +
-    '</p>';
-  throw new Error('firebase-config.js missing or empty');
-}
+const firebaseConfig = {
+  apiKey:            'AIzaSyA4wFvRoHQ3lre4-NO18ogVaSYM_hTohFA',
+  authDomain:        'presc-weight.firebaseapp.com',
+  projectId:         'presc-weight',
+  storageBucket:     'presc-weight.firebasestorage.app',
+  messagingSenderId: '77512782350',
+  appId:             '1:77512782350:web:afc4eb48ab146d5d9cc25f',
+  measurementId:     'G-FXMQXHPT6T',
+};
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);

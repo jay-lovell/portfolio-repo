@@ -16,46 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-    env:
-      FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-      FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
-      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-      FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
-      FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
-      FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
-      FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Generate Firebase config
-        run: |
-          printf '%s\n' 'window.firebaseConfig = {' \
-            '  apiKey: "'"${FIREBASE_API_KEY}"'",' \
-            '  authDomain: "'"${FIREBASE_AUTH_DOMAIN}"'",' \
-            '  projectId: "'"${FIREBASE_PROJECT_ID}"'",' \
-            '  storageBucket: "'"${FIREBASE_STORAGE_BUCKET}"'",' \
-            '  messagingSenderId: "'"${FIREBASE_MESSAGING_SENDER_ID}"'",' \
-            '  appId: "'"${FIREBASE_APP_ID}"'",' \
-            '  measurementId: "'"${FIREBASE_MEASUREMENT_ID}"'"' \
-            '};' > weight/firebase-config.js
-
-      - name: Debug generated firebase config
-        run: |
-          echo "Generated files in weight:" 
-          ls -la weight
-          echo "-- contents of firebase-config.js --"
-          sed -n '1,12p' weight/firebase-config.js
-
-      - name: Verify firebase config file
-        run: |
-          if [ ! -f weight/firebase-config.js ]; then
-            echo "::error::firebase-config.js was not generated"
-            exit 1
-          fi
-          if grep -q "__FIREBASE_" weight/firebase-config.js; then
-            echo "::error::firebase-config.js still contains placeholder values"
-            exit 1
-          fi
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
