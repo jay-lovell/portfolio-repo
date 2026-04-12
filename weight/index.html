@@ -24,17 +24,9 @@
     </section>
 
     <div class="unit-switcher">
-      <label for="weight-unit">Input units</label>
-      <select id="weight-unit" aria-label="Weight input units">
-        <option value="st-lb">Stones & Pounds</option>
-        <option value="lb">Pounds</option>
-        <option value="kg">Kilograms</option>
-      </select>
-    </div>
-
-    <div class="unit-switcher">
       <label for="user-select">Select User</label>
-      <select id="user-select" aria-label="Select user">
+      <select id="user-select" aria-label="Select user" required>
+        <option value="" disabled selected>-- Please select --</option>
         <option value="Sarah">Sarah</option>
         <option value="Jay">Jay</option>
       </select>
@@ -43,6 +35,16 @@
     <div class="unit-switcher">
       <label for="measurement-date">Measurement Date</label>
       <input id="measurement-date" type="date" />
+    </div>
+
+    <div class="unit-switcher">
+      <label for="weight-unit">Input units</label>
+      <select id="weight-unit" aria-label="Weight input units" required>
+        <option value="" disabled selected>-- Please select --</option>
+        <option value="st-lb">Stones & Pounds</option>
+        <option value="lb">Pounds</option>
+        <option value="kg">Kilograms</option>
+      </select>
     </div>
 
     <a href="./setup.html" class="note-text" style="display: block; color: #5fd3b9; text-decoration: none; margin-bottom: 16px;">→ Update Starting Weight</a>
@@ -226,10 +228,12 @@
       }
     }
 
-    toggleUnitFields(weightUnit.value);
+    toggleUnitFields(weightUnit.value || 'st-lb');
     weightUnit.addEventListener('change', () => {
-      clearHiddenFields(weightUnit.value);
-      toggleUnitFields(weightUnit.value);
+      if (weightUnit.value) {
+        clearHiddenFields(weightUnit.value);
+        toggleUnitFields(weightUnit.value);
+      }
     });
 
     function parseWeight() {
@@ -246,11 +250,27 @@
     }
 
     document.getElementById('calculate-btn').addEventListener('click', async () => {
-      const todayKg = parseWeight();
+      const user = userSelect.value;
+      const unit = weightUnit.value;
       const resultContainer = document.getElementById('result');
       const resultText = document.getElementById('result-text');
       const chartContainer = document.getElementById('chart-container');
-      const user = userSelect.value;
+
+      if (!user) {
+        resultContainer.hidden = false;
+        resultText.textContent = 'Please select a user.';
+        resultText.className = 'result-value';
+        chartContainer.hidden = true;
+        return;
+      }
+
+      if (!unit) {
+        resultContainer.hidden = false;
+        resultText.textContent = 'Please select input units.';
+        resultText.className = 'result-value';
+        chartContainer.hidden = true;
+        return;
+      }
 
       if (!startingWeightKg || startingWeightKg <= 0) {
         resultContainer.hidden = false;
@@ -260,6 +280,7 @@
         return;
       }
 
+      const todayKg = parseWeight();
       if (!todayKg || todayKg <= 0) {
         resultContainer.hidden = false;
         resultText.textContent = 'Enter a valid current weight.';

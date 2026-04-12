@@ -21,7 +21,8 @@
 
     <div class="unit-switcher">
       <label for="user-select">Select User</label>
-      <select id="user-select" aria-label="Select user">
+      <select id="user-select" aria-label="Select user" required>
+        <option value="" disabled selected>-- Please select --</option>
         <option value="Sarah">Sarah</option>
         <option value="Jay">Jay</option>
       </select>
@@ -29,7 +30,8 @@
 
     <div class="unit-switcher">
       <label for="weight-unit">Weight Units</label>
-      <select id="weight-unit" aria-label="Weight units">
+      <select id="weight-unit" aria-label="Weight units" required>
+        <option value="" disabled selected>-- Please select --</option>
         <option value="st-lb">Stones & Pounds</option>
         <option value="lb">Pounds</option>
         <option value="kg">Kilograms</option>
@@ -129,18 +131,35 @@
       return parseFloat(document.getElementById('start-kilograms').value) || 0;
     }
 
-    toggleUnitFields(weightUnit.value);
+    toggleUnitFields(weightUnit.value || 'st-lb');
     
     weightUnit.addEventListener('change', () => {
-      clearFields(weightUnit.value);
-      toggleUnitFields(weightUnit.value);
+      if (weightUnit.value) {
+        clearFields(weightUnit.value);
+        toggleUnitFields(weightUnit.value);
+      }
     });
 
     document.getElementById('save-btn').addEventListener('click', async () => {
-      const startKg = parseWeight();
       const user = userSelect.value;
+      const unit = weightUnit.value;
+      const startKg = parseWeight();
       const resultContainer = document.getElementById('result');
       const resultText = document.getElementById('result-text');
+
+      if (!user) {
+        resultContainer.hidden = false;
+        resultText.textContent = 'Please select a user.';
+        resultText.className = 'result-value';
+        return;
+      }
+
+      if (!unit) {
+        resultContainer.hidden = false;
+        resultText.textContent = 'Please select weight units.';
+        resultText.className = 'result-value';
+        return;
+      }
 
       if (!startKg || startKg <= 0) {
         resultContainer.hidden = false;
