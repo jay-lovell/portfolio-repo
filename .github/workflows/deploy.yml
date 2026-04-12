@@ -29,22 +29,27 @@ jobs:
       
       - name: Generate Firebase config
         run: |
-          printf '%s\n' 'window.firebaseConfig = {' \
-            '  apiKey: "'"${FIREBASE_API_KEY}"'",' \
-            '  authDomain: "'"${FIREBASE_AUTH_DOMAIN}"'",' \
-            '  projectId: "'"${FIREBASE_PROJECT_ID}"'",' \
-            '  storageBucket: "'"${FIREBASE_STORAGE_BUCKET}"'",' \
-            '  messagingSenderId: "'"${FIREBASE_MESSAGING_SENDER_ID}"'",' \
-            '  appId: "'"${FIREBASE_APP_ID}"'",' \
-            '  measurementId: "'"${FIREBASE_MEASUREMENT_ID}"'"' \
-            '};' > weight/firebase-config.js
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
 
-      - name: Debug generated firebase config
-        run: |
-          echo "Generated files in weight:" 
-          ls -la weight
-          echo "-- contents of firebase-config.js --"
-          sed -n '1,12p' weight/firebase-config.js
+          config = {
+              'apiKey': os.environ['FIREBASE_API_KEY'],
+              'authDomain': os.environ['FIREBASE_AUTH_DOMAIN'],
+              'projectId': os.environ['FIREBASE_PROJECT_ID'],
+              'storageBucket': os.environ['FIREBASE_STORAGE_BUCKET'],
+              'messagingSenderId': os.environ['FIREBASE_MESSAGING_SENDER_ID'],
+              'appId': os.environ['FIREBASE_APP_ID'],
+              'measurementId': os.environ['FIREBASE_MEASUREMENT_ID'],
+          }
+
+          path = Path('weight/firebase-config.js')
+          path.parent.mkdir(parents=True, exist_ok=True)
+          path.write_text(f"window.firebaseConfig = {json.dumps(config, indent=2)};\n", encoding='utf-8')
+          print('WROTE', path)
+          print(path.read_text())
+          PY
 
       - name: Verify firebase config file
         run: |
