@@ -92,23 +92,32 @@ export async function loadWeightData(currentUser = null) {
 export function weeklyResults(data) {
   const weeks = {};
 
+  // Group entries by week; data is ordered by date so last write wins per user per week
   data.forEach(entry => {
-    const wk  = weekKey(entry.date);
-    const mon = getMonday(entry.date);
-    const d   = new Date(entry.date);
-    if (d >= mon && d < new Date(mon.getTime() + MS_PER_WEEK)) {
-      if (!weeks[wk]) weeks[wk] = {};
-      weeks[wk][entry.user] = entry;
-    }
+    const wk = weekKey(entry.date);
+    if (!weeks[wk]) weeks[wk] = {};
+    weeks[wk][entry.user] = entry;
   });
 
-  return Object.entries(weeks).map(([wk, users]) => {
+  const sortedWeeks = Object.keys(weeks).sort();
+
+  return sortedWeeks.map(wk => {
+    const users = weeks[wk];
+
+    // changePct is already relative to each user's original starting weight
+    const weeklyPct = {};
+    USERS.forEach(u => {
+      if (users[u]) weeklyPct[u] = users[u].changePct;
+    });
+
     const missing = USERS.filter(u => !users[u]);
     let winner = null;
-    if (missing.length === 0) {
-      winner = users.Jay.changePct < users.Sarah.changePct ? 'Jay' : 'Sarah';
+    if (missing.length === 0 && weeklyPct.Jay !== weeklyPct.Sarah) {
+      // Lower changePct = more weight lost from start = winner
+      winner = weeklyPct.Jay < weeklyPct.Sarah ? 'Jay' : 'Sarah';
     }
-    return { week: wk, winner, missing };
+
+    return { week: wk, winner, missing, weeklyPct };
   });
 }
 
@@ -139,23 +148,7 @@ export function renderChart(canvasId, data, containerEl) {
   });
 
   // Weekly summary HTML
-  const results = weeklyResults(data);
   containerEl.querySelectorAll('.weekly-summary').forEach(el => el.remove());
-
-  if (results.length) {
-    const html = results.map(({ week, winner, missing }) => {
-      if (winner) {
-        return `<b>Week of ${week}:</b> Winner: <span style="color:${COLORS[winner]}">${winner}</span>`;
-      }
-      const names = missing.join(' and ');
-      return `<b>Week of ${week}:</b> <span style="color:#ffb300">${names} ha${missing.length > 1 ? 've' : 's'} not entered their weight this week</span>`;
-    }).join('<br/>');
-
-    containerEl.insertAdjacentHTML(
-      'afterbegin',
-      `<div class="weekly-summary note-text" style="margin-bottom:10px">${html}</div>`
-    );
-  }
 
   if (chartInstance) chartInstance.destroy();
 
@@ -173,6 +166,92 @@ export function renderChart(canvasId, data, containerEl) {
         y: {
           beginAtZero: false, suggestedMin: 90, suggestedMax: 105,
           title: { display: true, text: 'Relative Weight (%)' },
+          ticks: { callback: v => `${v}%` }
+        }
+      }
+    }
+  });
+}
+
+/* ── Leaderboard ─────────────────────────────────────── */
+
+export function renderLeaderboard(data, results, containerEl) {
+  const wins = { Jay: 0, Sarah: 0 };
+  results.forEach(({ winner }) => { if (winner) wins[winner]++; });
+
+  // Total % lost = most recent entry's cumulative changePct per user
+  const totalPct = { Jay: 0, Sarah: 0 };
+  USERS.forEach(u => {
+    const entries = data
+      .filter(e => e.user === u)
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+    if (entries.length) totalPct[u] = entries[0].changePct;
+  });
+
+  const maxWins = Math.max(wins.Jay, wins.Sarah);
+
+  const rows = USERS.map(u => {
+    const crown  = maxWins > 0 && wins[u] === maxWins ? ' 👑' : '';
+    const pctVal = -(totalPct[u] ?? 0); // positive = lost weight
+    return `<tr>
+      <td style="color:${COLORS[u]};font-weight:700">${u}${crown}</td>
+      <td>${wins[u]}</td>
+      <td>${pctVal >= 0 ? '' : '-'}${Math.abs(pctVal).toFixed(2)}%</td>
+    </tr>`;
+  }).join('');
+
+  containerEl.innerHTML = `
+    <p class="note-text" style="margin:0 0 10px">Competition standings</p>
+    <table class="leaderboard-table">
+      <thead><tr><th>Name</th><th>Weeks Won</th><th>Total % Lost</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+/* ── Weekly bar chart ────────────────────────────────── */
+
+let weeklyChartInstance = null;
+
+export function renderWeeklyBarChart(canvasId, results) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+
+  // Only show weeks where both users have entries
+  const completedWeeks = results.filter(r => r.missing.length === 0);
+  const labels = completedWeeks.map(r => r.week);
+
+  if (weeklyChartInstance) weeklyChartInstance.destroy();
+
+  weeklyChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: USERS.map(u => ({
+        label: u,
+        data: completedWeeks.map(r =>
+          r.weeklyPct[u] !== undefined
+            ? Math.round(-r.weeklyPct[u] * 100) / 100  // positive = lost weight
+            : null
+        ),
+        backgroundColor: COLORS[u] + 'aa',
+        borderColor:     COLORS[u],
+        borderWidth:     2,
+        borderRadius:    6,
+      }))
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: c => `${c.dataset.label}: ${c.parsed.y.toFixed(2)}% of start weight lost`
+          }
+        }
+      },
+      scales: {
+        x: { title: { display: true, text: 'Week of' } },
+        y: {
+          title: { display: true, text: '% of Start Weight Lost' },
           ticks: { callback: v => `${v}%` }
         }
       }
