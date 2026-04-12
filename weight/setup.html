@@ -77,14 +77,15 @@
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
     import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
-    // Firebase configuration - Replace with your own Firebase project config
+    // Firebase configuration - loaded from environment variables
     const firebaseConfig = {
-      apiKey: "your-api-key",
-      authDomain: "your-project.firebaseapp.com",
-      projectId: "your-project-id",
-      storageBucket: "your-project.appspot.com",
-      messagingSenderId: "123456789",
-      appId: "your-app-id"
+      apiKey: "__FIREBASE_API_KEY__",
+      authDomain: "__FIREBASE_AUTH_DOMAIN__",
+      projectId: "__FIREBASE_PROJECT_ID__",
+      storageBucket: "__FIREBASE_STORAGE_BUCKET__",
+      messagingSenderId: "__FIREBASE_MESSAGING_SENDER_ID__",
+      appId: "__FIREBASE_APP_ID__",
+      measurementId: "__FIREBASE_MEASUREMENT_ID__"
     };
 
     // Initialize Firebase
@@ -189,7 +190,7 @@
       } catch (error) {
         console.error('Error saving starting weight:', error);
         resultContainer.hidden = false;
-        resultText.textContent = 'Error saving weight. Try again.';
+        resultText.textContent = error?.message || 'Error saving weight. Try again.';
         resultText.className = 'result-value gained';
       }
     });
