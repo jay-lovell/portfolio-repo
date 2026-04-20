@@ -44,6 +44,12 @@ export function weekKey(date) {
   return getMonday(date).toISOString().slice(0, 10);
 }
 
+/** Format an ISO date string (or Date) as d/m — no zero-padding */
+export function fmtDate(isoStr) {
+  const d = new Date(isoStr);
+  return `${d.getUTCDate()}/${d.getUTCMonth() + 1}`;
+}
+
 /* ── Firestore helpers ──────────────────────────────── */
 
 export async function saveWeight(user, startKg, todayKg, changePct, date) {
@@ -135,7 +141,7 @@ export function renderChart(canvasId, data, containerEl) {
 
   // Unique sorted dates
   const dateKeys = [...new Set(data.map(e => e.date.slice(0, 10)))].sort();
-  const labels   = dateKeys.map(d => new Date(d).toLocaleDateString());
+  const labels   = dateKeys.map(d => fmtDate(d));
 
   const datasets = USERS.map(user => {
     const byDate = {};
@@ -222,7 +228,7 @@ export function renderWeeklyBarChart(canvasId, results) {
 
   // Only show weeks where both users have entries
   const completedWeeks = results.filter(r => r.missing.length === 0);
-  const labels = completedWeeks.map(r => r.week);
+  const labels = completedWeeks.map(r => fmtDate(r.week));
 
   // Custom plugin: draw a crown emoji above the winning bar each week
   const crownPlugin = {
