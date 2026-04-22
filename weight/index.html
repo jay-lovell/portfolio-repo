@@ -10,6 +10,14 @@
 </head>
 <body>
   <main class="page-shell" aria-label="Weight change calculator">
+    <section class="auth-bar" aria-label="Authentication controls">
+      <p id="auth-status" class="auth-status">Checking sign-in status…</p>
+      <div class="auth-actions">
+        <button id="signin-btn" type="button" class="auth-button">Sign in with Google</button>
+        <button id="signout-btn" type="button" class="auth-button auth-button-secondary" hidden>Sign out</button>
+      </div>
+    </section>
+
     <section class="brand-bar">
       <div class="brand-logo-wrap">
         <img src="../images/presc-logo.jpeg" alt="PRESC logo" class="brand-logo" />
@@ -89,8 +97,9 @@
 
   <script type="module">
     import {
-      db, loadStartingWeight, loadWeightData, saveWeight,
-      renderChart, parseWeightInputs, todayISO
+      loadStartingWeight, loadWeightData, saveWeight,
+      renderChart, parseWeightInputs, todayISO,
+      signInWithGoogle, signOutUser, onUserChanged
     } from './presc.js';
 
     const weightUnit       = document.getElementById('weight-unit');
@@ -99,7 +108,14 @@
     const resultContainer  = document.getElementById('result');
     const resultText       = document.getElementById('result-text');
     const chartContainer   = document.getElementById('chart-container');
+    const authStatus       = document.getElementById('auth-status');
+    const signInBtn        = document.getElementById('signin-btn');
+    const signOutBtn       = document.getElementById('signout-btn');
+    const calculateBtn     = document.getElementById('calculate-btn');
+    const setupLink        = document.querySelector('a[href="./setup.html"]');
+    const chartLink        = document.querySelector('a[href="./chart.html"]');
     let startingWeightKg   = null;
+    let currentUser        = null;
 
     measurementDate.value = todayISO();
 
@@ -136,7 +152,8 @@
       chartContainer.hidden = true;
     }
 
-    document.getElementById('calculate-btn').addEventListener('click', async () => {
+    calculateBtn.addEventListener('click', async () => {
+      if (!currentUser) return showError('Please sign in with Google first.');
       const user = userSelect.value;
       if (!user)  return showError('Please select a user.');
       if (!weightUnit.value) return showError('Please select input units.');
@@ -174,6 +191,43 @@
         chartContainer.hidden = true;
       }
     });
+
+    function setAuthState(user) {
+      currentUser = user;
+      const isSignedIn = Boolean(user);
+
+      authStatus.textContent = isSignedIn
+        ? `Signed in as ${user.displayName || user.email}`
+        : 'Please sign in with Google to use the calculator.';
+      signInBtn.hidden = isSignedIn;
+      signOutBtn.hidden = !isSignedIn;
+      calculateBtn.disabled = !isSignedIn;
+      userSelect.disabled = !isSignedIn;
+      measurementDate.disabled = !isSignedIn;
+      weightUnit.disabled = !isSignedIn;
+      setupLink.style.pointerEvents = isSignedIn ? 'auto' : 'none';
+      setupLink.style.opacity = isSignedIn ? '1' : '0.5';
+      chartLink.style.pointerEvents = isSignedIn ? 'auto' : 'none';
+      chartLink.style.opacity = isSignedIn ? '1' : '0.5';
+    }
+
+    signInBtn.addEventListener('click', async () => {
+      try {
+        await signInWithGoogle();
+      } catch (error) {
+        showError(error?.message || 'Sign-in failed. Please try again.');
+      }
+    });
+
+    signOutBtn.addEventListener('click', async () => {
+      try {
+        await signOutUser();
+      } catch (error) {
+        showError(error?.message || 'Sign-out failed. Please try again.');
+      }
+    });
+
+    onUserChanged(setAuthState);
   </script>
 </body>
 </html>

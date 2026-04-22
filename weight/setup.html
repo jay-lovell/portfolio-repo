@@ -9,6 +9,14 @@
 </head>
 <body>
   <main class="page-shell" aria-label="Weight setup">
+    <section class="auth-bar" aria-label="Authentication controls">
+      <p id="auth-status" class="auth-status">Checking sign-in status…</p>
+      <div class="auth-actions">
+        <button id="signin-btn" type="button" class="auth-button">Sign in with Google</button>
+        <button id="signout-btn" type="button" class="auth-button auth-button-secondary" hidden>Sign out</button>
+      </div>
+    </section>
+
     <section class="brand-bar">
       <div class="brand-logo-wrap">
         <img src="../images/presc-logo.jpeg" alt="PRESC logo" class="brand-logo" />
@@ -75,12 +83,22 @@
   </main>
 
   <script type="module">
-    import { saveStartingWeight, parseWeightInputs } from './presc.js';
+    import {
+      saveStartingWeight, parseWeightInputs,
+      signInWithGoogle, signOutUser, onUserChanged
+    } from './presc.js';
 
     const weightUnit  = document.getElementById('weight-unit');
     const userSelect  = document.getElementById('user-select');
     const resultContainer = document.getElementById('result');
     const resultText  = document.getElementById('result-text');
+    const authStatus  = document.getElementById('auth-status');
+    const signInBtn   = document.getElementById('signin-btn');
+    const signOutBtn  = document.getElementById('signout-btn');
+    const saveBtn     = document.getElementById('save-btn');
+    const calcLink    = document.querySelector('a[href="./index.html"]');
+    const chartLink   = document.querySelector('a[href="./chart.html"]');
+    let currentUser   = null;
 
     /* ── Unit‑field toggling ─────────────────────────── */
 
@@ -104,7 +122,8 @@
 
     /* ── Save button ─────────────────────────────────── */
 
-    document.getElementById('save-btn').addEventListener('click', async () => {
+    saveBtn.addEventListener('click', async () => {
+      if (!currentUser) { resultContainer.hidden = false; resultText.textContent = 'Please sign in with Google first.'; resultText.className = 'result-value'; return; }
       const user = userSelect.value;
       if (!user) { resultContainer.hidden = false; resultText.textContent = 'Please select a user.'; resultText.className = 'result-value'; return; }
       if (!weightUnit.value) { resultContainer.hidden = false; resultText.textContent = 'Please select weight units.'; resultText.className = 'result-value'; return; }
@@ -127,6 +146,46 @@
         resultText.className = 'result-value gained';
       }
     });
+
+    function setAuthState(user) {
+      currentUser = user;
+      const isSignedIn = Boolean(user);
+
+      authStatus.textContent = isSignedIn
+        ? `Signed in as ${user.displayName || user.email}`
+        : 'Please sign in with Google to update starting weight.';
+      signInBtn.hidden = isSignedIn;
+      signOutBtn.hidden = !isSignedIn;
+      saveBtn.disabled = !isSignedIn;
+      userSelect.disabled = !isSignedIn;
+      weightUnit.disabled = !isSignedIn;
+      calcLink.style.pointerEvents = isSignedIn ? 'auto' : 'none';
+      calcLink.style.opacity = isSignedIn ? '1' : '0.5';
+      chartLink.style.pointerEvents = isSignedIn ? 'auto' : 'none';
+      chartLink.style.opacity = isSignedIn ? '1' : '0.5';
+    }
+
+    signInBtn.addEventListener('click', async () => {
+      try {
+        await signInWithGoogle();
+      } catch (error) {
+        resultContainer.hidden = false;
+        resultText.textContent = error?.message || 'Sign-in failed. Please try again.';
+        resultText.className = 'result-value';
+      }
+    });
+
+    signOutBtn.addEventListener('click', async () => {
+      try {
+        await signOutUser();
+      } catch (error) {
+        resultContainer.hidden = false;
+        resultText.textContent = error?.message || 'Sign-out failed. Please try again.';
+        resultText.className = 'result-value';
+      }
+    });
+
+    onUserChanged(setAuthState);
   </script>
 </body>
 </html>

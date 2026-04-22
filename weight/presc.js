@@ -8,6 +8,10 @@ import {
   getFirestore, collection, addDoc, getDocs, deleteDoc,
   query, where, orderBy
 } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+import {
+  getAuth, GoogleAuthProvider, onAuthStateChanged, setPersistence,
+  browserSessionPersistence, signInWithPopup, signOut
+} from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
 
 /* ── Firebase bootstrap ─────────────────────────────── */
 
@@ -23,6 +27,25 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+export const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
+
+setPersistence(auth, browserSessionPersistence).catch(error => {
+  console.error('Unable to set auth persistence:', error);
+});
+
+export async function signInWithGoogle() {
+  const result = await signInWithPopup(auth, googleProvider);
+  return result.user;
+}
+
+export async function signOutUser() {
+  await signOut(auth);
+}
+
+export function onUserChanged(callback) {
+  return onAuthStateChanged(auth, callback);
+}
 
 /* ── Constants ──────────────────────────────────────── */
 

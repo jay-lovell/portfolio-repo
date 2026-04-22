@@ -39,6 +39,42 @@ body {
   text-align: center;
 }
 
+.auth-bar {
+  margin-bottom: 22px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  text-align: left;
+}
+
+.auth-status {
+  margin: 0 0 12px;
+  color: #cbd6ff;
+  font-size: 0.9rem;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.auth-button {
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #5fd3b9, #39a0c5);
+  color: #040403;
+  border: none;
+  cursor: pointer;
+}
+
+.auth-button-secondary {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f4f4f4;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 .brand-bar h1 {
   font-size: 1.55rem;
   line-height: 1.1;
@@ -221,6 +257,10 @@ select {
 }
 
 @media (max-width: 480px) {
+  .auth-actions {
+    flex-direction: column;
+  }
+
   .brand-bar {
     flex-direction: column;
     align-items: flex-start;

@@ -14,3 +14,13 @@ To Do
 
 === SEPTEMBER 2022 ===
 Site taken down ready for full rewrite
+
+## PRESC Weight App OAuth Login
+
+The calculator, setup, and chart pages under `weight/` now require Google OAuth sign-in via Firebase Authentication.
+
+Before using it:
+
+1. In Firebase Authentication, enable the **Google** provider.
+2. Add your deployed domain (and local dev URL if needed) to Firebase authorized domains.
+3. Use the Sign in / Sign out buttons on each page to authenticate before loading or saving data.

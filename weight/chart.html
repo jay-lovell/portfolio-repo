@@ -40,6 +40,14 @@
 </head>
 <body>
   <main class="page-shell" aria-label="Weight competition chart">
+    <section class="auth-bar" aria-label="Authentication controls">
+      <p id="auth-status" class="auth-status">Checking sign-in status…</p>
+      <div class="auth-actions">
+        <button id="signin-btn" type="button" class="auth-button">Sign in with Google</button>
+        <button id="signout-btn" type="button" class="auth-button auth-button-secondary" hidden>Sign out</button>
+      </div>
+    </section>
+
     <section class="brand-bar">
       <div class="brand-logo-wrap">
         <img src="../images/presc-logo.jpeg" alt="PRESC logo" class="brand-logo" />
@@ -70,40 +78,88 @@
   <script type="module">
     import {
       loadWeightData, weeklyResults,
-      renderChart, renderWeeklyBarChart, renderLeaderboard
+      renderChart, renderWeeklyBarChart, renderLeaderboard,
+      signInWithGoogle, signOutUser, onUserChanged
     } from './presc.js';
 
     const container         = document.getElementById('chart-container');
     const weeklyContainer   = document.getElementById('weekly-chart-container');
     const leaderboardEl     = document.getElementById('leaderboard-container');
+    const authStatus        = document.getElementById('auth-status');
+    const signInBtn         = document.getElementById('signin-btn');
+    const signOutBtn        = document.getElementById('signout-btn');
+    const calculatorLink    = document.querySelector('a[href="./index.html"]');
+    const setupLink         = document.querySelector('a[href="./setup.html"]');
+    const thisWeekEl        = document.getElementById('this-week-winner');
 
-    const data = await loadWeightData();   // no currentUser → percentages only (privacy)
-    if (data.length) {
-      const results = weeklyResults(data);
-      renderLeaderboard(data, results, leaderboardEl);
+    async function renderChartPage() {
+      const data = await loadWeightData();
+      if (data.length) {
+        const results = weeklyResults(data);
+        renderLeaderboard(data, results, leaderboardEl);
 
-      // This week's winner banner
-      const thisWeekEl = document.getElementById('this-week-winner');
-      const latest = results.at(-1);
-      if (latest) {
-        if (latest.winner) {
-          const color = latest.winner === 'Sarah' ? '#ff69b4' : '#2196f3';
-          thisWeekEl.innerHTML = `<p style="margin:0;font-size:0.85rem;color:#98a0b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">This week's winner</p><p style="margin:0;font-size:1.6rem;font-weight:700;color:${color}">👑 ${latest.winner}</p>`;
-        } else if (latest.missing.length > 0) {
-          const names = latest.missing.join(' and ');
-          thisWeekEl.innerHTML = `<p style="margin:0;font-size:1rem;color:#ffb300">Waiting for ${names} to weigh in this week</p>`;
-        } else {
-          thisWeekEl.innerHTML = `<p style="margin:0;font-size:1rem;color:#98a0b8">This week is a draw!</p>`;
+        const latest = results.at(-1);
+        if (latest) {
+          if (latest.winner) {
+            const color = latest.winner === 'Sarah' ? '#ff69b4' : '#2196f3';
+            thisWeekEl.innerHTML = `<p style="margin:0;font-size:0.85rem;color:#98a0b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">This week's winner</p><p style="margin:0;font-size:1.6rem;font-weight:700;color:${color}">👑 ${latest.winner}</p>`;
+          } else if (latest.missing.length > 0) {
+            const names = latest.missing.join(' and ');
+            thisWeekEl.innerHTML = `<p style="margin:0;font-size:1rem;color:#ffb300">Waiting for ${names} to weigh in this week</p>`;
+          } else {
+            thisWeekEl.innerHTML = `<p style="margin:0;font-size:1rem;color:#98a0b8">This week is a draw!</p>`;
+          }
         }
-      }
 
-      renderWeeklyBarChart('weeklyChart', results);
-      renderChart('weightChart', data, container);
-    } else {
-      leaderboardEl.innerHTML   = '<p class="note-text">No weight data recorded yet.</p>';
-      weeklyContainer.innerHTML = '';
-      container.innerHTML       = '';
+        renderWeeklyBarChart('weeklyChart', results);
+        renderChart('weightChart', data, container);
+      } else {
+        leaderboardEl.innerHTML   = '<p class="note-text">No weight data recorded yet.</p>';
+        thisWeekEl.innerHTML      = '';
+        weeklyContainer.innerHTML = '';
+        container.innerHTML       = '';
+      }
     }
+
+    function setAuthState(user) {
+      const isSignedIn = Boolean(user);
+      authStatus.textContent = isSignedIn
+        ? `Signed in as ${user.displayName || user.email}`
+        : 'Please sign in with Google to view the competition chart.';
+      signInBtn.hidden = isSignedIn;
+      signOutBtn.hidden = !isSignedIn;
+      calculatorLink.style.pointerEvents = isSignedIn ? 'auto' : 'none';
+      calculatorLink.style.opacity = isSignedIn ? '1' : '0.5';
+      setupLink.style.pointerEvents = isSignedIn ? 'auto' : 'none';
+      setupLink.style.opacity = isSignedIn ? '1' : '0.5';
+
+      if (isSignedIn) {
+        renderChartPage();
+      } else {
+        leaderboardEl.innerHTML = '<p class="note-text">Sign in to view competition data.</p>';
+        thisWeekEl.innerHTML = '';
+        weeklyContainer.innerHTML = '';
+        container.innerHTML = '';
+      }
+    }
+
+    signInBtn.addEventListener('click', async () => {
+      try {
+        await signInWithGoogle();
+      } catch (error) {
+        leaderboardEl.innerHTML = `<p class="note-text">${error?.message || 'Sign-in failed. Please try again.'}</p>`;
+      }
+    });
+
+    signOutBtn.addEventListener('click', async () => {
+      try {
+        await signOutUser();
+      } catch (error) {
+        leaderboardEl.innerHTML = `<p class="note-text">${error?.message || 'Sign-out failed. Please try again.'}</p>`;
+      }
+    });
+
+    onUserChanged(setAuthState);
   </script>
 </body>
 </html>
