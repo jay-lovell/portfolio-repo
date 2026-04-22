@@ -31,7 +31,10 @@ export const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
 setPersistence(auth, browserSessionPersistence).catch(error => {
-  console.error('Unable to set auth persistence:', error);
+  console.error(
+    'Unable to persist auth session; users may need to sign in again after refresh.',
+    error
+  );
 });
 
 export async function signInWithGoogle() {

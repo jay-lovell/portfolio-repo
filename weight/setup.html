@@ -122,28 +122,42 @@
 
     /* ── Save button ─────────────────────────────────── */
 
+    function showMessage(message, className = 'result-value') {
+      resultContainer.hidden = false;
+      resultText.textContent = message;
+      resultText.className = className;
+    }
+
     saveBtn.addEventListener('click', async () => {
-      if (!currentUser) { resultContainer.hidden = false; resultText.textContent = 'Please sign in with Google first.'; resultText.className = 'result-value'; return; }
+      if (!currentUser) {
+        showMessage('Please sign in with Google first.');
+        return;
+      }
       const user = userSelect.value;
-      if (!user) { resultContainer.hidden = false; resultText.textContent = 'Please select a user.'; resultText.className = 'result-value'; return; }
-      if (!weightUnit.value) { resultContainer.hidden = false; resultText.textContent = 'Please select weight units.'; resultText.className = 'result-value'; return; }
+      if (!user) {
+        showMessage('Please select a user.');
+        return;
+      }
+      if (!weightUnit.value) {
+        showMessage('Please select weight units.');
+        return;
+      }
 
       const startKg = parseWeightInputs(weightUnit.value, {
         stones: 'start-stones', pounds: 'start-pounds',
         poundsOnly: 'start-pounds-only', kg: 'start-kilograms'
       });
-      if (!startKg || startKg <= 0) { resultContainer.hidden = false; resultText.textContent = 'Enter a valid starting weight.'; resultText.className = 'result-value'; return; }
+      if (!startKg || startKg <= 0) {
+        showMessage('Enter a valid starting weight.');
+        return;
+      }
 
       try {
         await saveStartingWeight(user, startKg, weightUnit.value);
-        resultContainer.hidden = false;
-        resultText.textContent = '✓ Starting weight saved!';
-        resultText.className = 'result-value lost';
+        showMessage('✓ Starting weight saved!', 'result-value lost');
       } catch (error) {
         console.error('Error saving starting weight:', error);
-        resultContainer.hidden = false;
-        resultText.textContent = error?.message || 'Error saving weight. Try again.';
-        resultText.className = 'result-value gained';
+        showMessage(error?.message || 'Error saving weight. Try again.', 'result-value gained');
       }
     });
 
@@ -169,9 +183,7 @@
       try {
         await signInWithGoogle();
       } catch (error) {
-        resultContainer.hidden = false;
-        resultText.textContent = error?.message || 'Sign-in failed. Please try again.';
-        resultText.className = 'result-value';
+        showMessage(error?.message || 'Sign-in failed. Please try again.');
       }
     });
 
@@ -179,9 +191,7 @@
       try {
         await signOutUser();
       } catch (error) {
-        resultContainer.hidden = false;
-        resultText.textContent = error?.message || 'Sign-out failed. Please try again.';
-        resultText.className = 'result-value';
+        showMessage(error?.message || 'Sign-out failed. Please try again.');
       }
     });
 
