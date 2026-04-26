@@ -164,19 +164,6 @@ body {
     font-size: 1rem; /* prevent iOS auto-zoom */
   }
 
-  .film-grid {
-    display: flex;
-    gap: 12px;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 12px;
-    /* extra padding so first/last cards aren't clipped */
-    padding-right: 16px;
-  }
-  .film-grid::-webkit-scrollbar { display: none; }
-
   .reorder-hint::after { content: ' (hold to drag)'; }
 }
 
@@ -200,10 +187,45 @@ body {
   z-index: 10;
 }
 
-@media (max-width: 680px) {
+/* ── Carousel – portrait phones (iPhone 16 Pro Max / Pixel 8) ─── */
+@media (max-width: 480px) and (orientation: portrait) {
+  /* strip main side padding so grid spans edge-to-edge */
+  .flix-main {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* restore inner padding for controls above the grid */
+  .section-header,
+  .search-row,
+  .filter-bar {
+    padding-inline: 16px;
+  }
+
+  .film-grid {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* iOS momentum */
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    /* padding-inline lets first/last card snap to center */
+    padding-inline: calc(20vw - 6px);
+    padding-top: 8px;    /* breathing room below search bar */
+    padding-bottom: 16px;
+  }
+  .film-grid::-webkit-scrollbar { display: none; }
+
   .film-card {
-    flex: 0 0 140px;
-    scroll-snap-align: start;
+    flex: 0 0 60vw;
+    scroll-snap-align: center;
+  }
+
+  /* centred card is already the focal point – no scale-up on hover/touch */
+  .film-card:hover {
+    transform: none;
+    box-shadow: none;
+    z-index: 0;
   }
 }
 
