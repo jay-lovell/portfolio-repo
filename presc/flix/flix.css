@@ -163,6 +163,8 @@ body {
     min-width: 0;
     font-size: 1rem; /* prevent iOS auto-zoom */
   }
+
+  .film-grid {
     display: flex;
     gap: 12px;
     overflow-x: auto;
