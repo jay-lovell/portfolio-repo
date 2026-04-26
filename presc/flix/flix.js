@@ -677,15 +677,33 @@ function render() {
 }
 
 // ── DnD helpers ────────────────────────────────────────────────────────────
-function syncFilms() {
+function syncFilms(draggedId) {
   if (sortByName) return; // sort is display-only; don't alter queue order
   const grid = document.getElementById('film-grid');
   const visibleIds = Array.from(grid.querySelectorAll('.film-card'))
     .map(c => Number(c.dataset.id));
-  // Preserve order of visible films; keep hidden-tab films at the end
-  const visible = visibleIds.map(id => films.find(f => f.id === id)).filter(Boolean);
-  const hidden  = films.filter(f => !visibleIds.includes(f.id));
-  films = [...visible, ...hidden];
+  // True insertion: remove the dragged film from its current position and insert it
+  // just before whichever film now follows it in the visible order. This means
+  // dragging film 28 before film 9 always makes it film 9 and shifts 9→10, etc.
+  const draggedFilm = films.find(f => f.id === Number(draggedId));
+  const withoutDragged = films.filter(f => f.id !== Number(draggedId));
+  const posInVisible = visibleIds.indexOf(Number(draggedId));
+  const nextVisibleId = posInVisible < visibleIds.length - 1
+    ? visibleIds[posInVisible + 1]
+    : null;
+  let insertIdx;
+  if (nextVisibleId !== null) {
+    insertIdx = withoutDragged.findIndex(f => f.id === nextVisibleId);
+  } else {
+    // Dragged film is last among visible — insert after the last visible film
+    const visibleSet = new Set(visibleIds);
+    let lastVisibleIdx = -1;
+    withoutDragged.forEach((f, i) => { if (visibleSet.has(f.id)) lastVisibleIdx = i; });
+    insertIdx = lastVisibleIdx + 1;
+  }
+  const result = [...withoutDragged];
+  result.splice(insertIdx, 0, draggedFilm);
+  films = result;
   saveData().catch(e => console.warn('PrescFlix: save failed', e));
   render();
 }
@@ -816,8 +834,9 @@ function attachGridDnD(grid) {
     placeholder = null;
     draggedCard.style.display = '';
     draggedCard.classList.remove('dragging');
-    syncFilms();
+    const _draggedId = draggedCard.dataset.id;
     draggedCard = null;
+    syncFilms(_draggedId);
     lastInsertIdx = -1;
   });
 }
@@ -907,7 +926,7 @@ function attachTouchDnD(card) {
       grid.insertBefore(card, touchPlaceholder);
       touchPlaceholder.remove();
       touchPlaceholder = null;
-      syncFilms();
+      syncFilms(card.dataset.id);
     }
   }
 
