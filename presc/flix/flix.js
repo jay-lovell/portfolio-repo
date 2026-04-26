@@ -791,6 +791,9 @@ function attachTouchDnD(card) {
   let lastTouchIdx     = -1;
 
   function startLongPress(e) {
+    // Don't intercept taps on interactive children (badge, buttons, links)
+    if (e.target.closest('button, a')) return;
+
     originX = e.touches[0].clientX;
     originY = e.touches[0].clientY;
 
@@ -1053,12 +1056,6 @@ if (modalDeleteBtn) {
 const filterToggleBtn = document.getElementById('filter-toggle-btn');
 const filterBar       = document.getElementById('filter-bar');
 if (filterToggleBtn && filterBar) {
-  // Collapse by default on narrow screens
-  if (window.innerWidth <= 680) {
-    filterBar.classList.add('collapsed');
-    filterToggleBtn.setAttribute('aria-expanded', 'false');
-    filterToggleBtn.textContent = 'Filters ▸';
-  }
   filterToggleBtn.addEventListener('click', () => {
     const isCollapsed = filterBar.classList.toggle('collapsed');
     filterToggleBtn.setAttribute('aria-expanded', String(!isCollapsed));

@@ -137,7 +137,32 @@ body {
 @media (max-width: 680px) {
   .flix-main { padding-left: 16px; padding-right: 16px; }
 
-  .film-grid {
+  /* On mobile, .collapsed class actually collapses the bar.
+     On desktop, this class has no effect (rules are inside this media query). */
+  .filter-bar {
+    overflow: hidden;
+    max-height: 600px;
+    transition: max-height 0.3s ease, opacity 0.25s ease, margin-bottom 0.25s ease;
+  }
+
+  .filter-bar.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+    pointer-events: none;
+  }
+
+  .search-row {
+    width: 100%;
+  }
+
+  .search-input {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    min-width: 0;
+    font-size: 1rem; /* prevent iOS auto-zoom */
+  }
     display: flex;
     gap: 12px;
     overflow-x: auto;
@@ -1015,6 +1040,7 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator {
   text-overflow: ellipsis;
   box-shadow: 0 2px 6px rgba(0,0,0,0.5);
   pointer-events: none;
+  display: block;
 }
 
 /* ── Genre multi-picker (add/edit form) ────────────────────────── */
@@ -1360,18 +1386,6 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator {
     color: var(--accent);
     border-color: var(--accent);
     background: rgba(95, 211, 185, 0.1);
-  }
-
-  .filter-bar {
-    overflow: hidden;
-    max-height: 400px;
-    transition: max-height 0.3s ease, opacity 0.25s ease, margin-bottom 0.25s ease;
-  }
-
-  .filter-bar.collapsed {
-    max-height: 0;
-    opacity: 0;
-    margin-bottom: 0;
   }
 }
 
