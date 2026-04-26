@@ -148,6 +148,7 @@
           <input class="form-input" id="field-watched-date" type="date">
         </label>
         <p class="form-error" id="form-error" role="alert" aria-live="polite"></p>
+        <button type="button" class="note-edit-btn" id="edit-modal-note-btn">💬 Note</button>
         <div class="modal-form-actions">
           <button type="submit" class="form-submit">Add to Queue</button>
           <button type="button" class="modal-delete-btn" id="modal-delete-btn" aria-label="Delete film">Delete Film</button>
@@ -185,6 +186,34 @@
       </div>
       <div class="seasons-list" id="seasons-list"></div>
       <p class="seasons-empty" id="seasons-empty">No seasons yet.</p>
+    </div>
+  </div>
+
+  <!-- Note modal -->
+  <div class="modal-overlay" id="note-overlay" aria-hidden="true">
+    <div class="modal notes-modal" role="dialog" aria-modal="true" aria-labelledby="note-modal-title">
+      <div class="modal-header">
+        <div class="note-modal-heading">
+          <h2 class="modal-title" id="note-modal-title">Notes</h2>
+          <p class="note-film-name" id="note-film-name"></p>
+        </div>
+        <button class="modal-close" id="note-modal-close" aria-label="Close">&#x2715;</button>
+      </div>
+      <div class="notes-thread" id="notes-thread"></div>
+      <div class="notes-compose">
+        <fieldset class="form-fieldset notes-compose-who">
+          <legend class="form-legend">Sending as</legend>
+          <div class="radio-group">
+            <label class="radio-label"><input type="radio" name="noteAuthor" value="Sarah"> Sarah</label>
+            <label class="radio-label"><input type="radio" name="noteAuthor" value="Jay"> Jay</label>
+          </div>
+        </fieldset>
+        <div class="notes-input-row">
+          <textarea class="notes-textarea" id="note-text" rows="2" placeholder="Write a note…" maxlength="1000"></textarea>
+          <button type="button" class="notes-send-btn" id="note-save" aria-label="Send note">&#10148;</button>
+        </div>
+        <p class="form-error" id="note-error" role="alert" aria-live="polite"></p>
+      </div>
     </div>
   </div>
 

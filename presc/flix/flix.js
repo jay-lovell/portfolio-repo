@@ -137,6 +137,13 @@ async function loadData() {
               film.genres = [];
             }
             if (!film.genres) film.genres = [];
+            // migrate legacy single note object → notes array
+            if (film.note && !film.notes) {
+              film.notes = [{ id: String(Date.now()) + '_migrated', author: film.note.author, text: film.note.text, timestamp: new Date().toISOString() }];
+              delete film.note;
+            } else if (!film.notes) {
+              film.notes = [];
+            }
             return film;
           })
         : DEFAULT_FILMS.slice().map(f => ({ ...f, watched: false, services: [] }));
@@ -151,9 +158,7 @@ async function loadData() {
 }
 
 async function saveData() {
-  try {
-    await setDoc(DATA_DOC, { films, seasons });
-  } catch (e) { console.warn('PrescFlix: could not save data', e); }
+  await setDoc(DATA_DOC, { films, seasons });
 }
 
 // ── Poster wireframe SVG ───────────────────────────────────────────────────
@@ -609,10 +614,14 @@ function render() {
       ? `<div class="film-genres">${filmGenres.map(g => `<span class="film-genre">${esc(g)}</span>`).join('')}</div>`
       : '';
     const filmServices = Array.isArray(film.services) ? film.services : (film.service ? [film.service] : []);
-    const metaHTML = (filmServices.length || film.addedBy)
+    const noteCount = film.notes && film.notes.length ? film.notes.length : 0;
+    const noteBtnHTML = noteCount
+      ? `<button class="note-btn" aria-label="${noteCount} note${noteCount > 1 ? 's' : ''}" title="${noteCount} note${noteCount > 1 ? 's' : ''}"><svg class="note-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="14" height="11" rx="2"/><polygon points="3,12 3,15 6,12"/></svg></button>`
+      : '';
+    const metaHTML = (filmServices.length || film.addedBy || noteCount)
       ? `<div class="film-meta">
           <div class="film-service-chips">${filmServices.map(s => `<span class="service-chip" data-service="${esc(s)}" title="${esc(s)}">${serviceIcon(s)}</span>`).join('')}</div>
-          ${film.addedBy ? `<span class="added-by-badge">${esc(film.addedBy[0])}</span>` : ''}
+          <div class="film-meta-right">${noteBtnHTML}${film.addedBy ? `<span class="added-by-badge">${esc(film.addedBy[0])}</span>` : ''}</div>
          </div>` : '';
     const pr = prescRating(film.ratingJay, film.ratingSarah);
     const posterOverlayHTML = (activeTab === 'watched' && (film.ratingSarah != null || film.ratingJay != null || pr != null))
@@ -639,6 +648,9 @@ function render() {
     const badge = card.querySelector('.queue-badge');
     if (badge) badge.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); openModal(film); });
 
+    const noteBtn = card.querySelector('.note-btn');
+    if (noteBtn) noteBtn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); openNoteModal(film); });
+
     card.querySelector('.watch-toggle').addEventListener('click', e => {
       e.stopPropagation();
       const f = films.find(fi => fi.id === film.id);
@@ -648,7 +660,7 @@ function render() {
         delete f.watchedDate;
         delete f.ratingJay;
         delete f.ratingSarah;
-        saveData();
+        saveData().catch(e => console.warn('PrescFlix: save failed', e));
         render();
       } else {
         openRatingModal(f);
@@ -674,7 +686,7 @@ function syncFilms() {
   const visible = visibleIds.map(id => films.find(f => f.id === id)).filter(Boolean);
   const hidden  = films.filter(f => !visibleIds.includes(f.id));
   films = [...visible, ...hidden];
-  saveData();
+  saveData().catch(e => console.warn('PrescFlix: save failed', e));
   render();
 }
 
@@ -1046,6 +1058,15 @@ function openModal(film = null) {
   modalOverlay.setAttribute('aria-hidden', 'false');
   modalOverlay.classList.add('open');
   document.getElementById('field-title').focus();
+  const editModalNoteBtn = document.getElementById('edit-modal-note-btn');
+  if (editModalNoteBtn) {
+    if (film) {
+      editModalNoteBtn.textContent = (film.notes && film.notes.length) ? `💬 Notes (${film.notes.length})` : '💬 Add Note';
+      editModalNoteBtn.style.display = '';
+    } else {
+      editModalNoteBtn.style.display = 'none';
+    }
+  }
 }
 
 function closeModal() {
@@ -1065,7 +1086,19 @@ function closeModal() {
 addFab.addEventListener('click', () => openModal());
 modalClose.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeNoteModal(); } });
+
+// Note button in edit modal — opens note modal for this film
+const editModalNoteBtn = document.getElementById('edit-modal-note-btn');
+if (editModalNoteBtn) {
+  editModalNoteBtn.addEventListener('click', () => {
+    if (editingFilmId === null) return;
+    const film = films.find(fi => fi.id === editingFilmId);
+    if (!film) return;
+    closeModal();
+    openNoteModal(film);
+  });
+}
 
 // Modal delete button (Edit page — accessible on all devices)
 const modalDeleteBtn = document.getElementById('modal-delete-btn');
@@ -1076,7 +1109,7 @@ if (modalDeleteBtn) {
     if (!film) return;
     if (!window.confirm(`Remove "${film.title}" from your list?`)) return;
     films = films.filter(fi => fi.id !== editingFilmId);
-    saveData();
+    saveData().catch(e => console.warn('PrescFlix: save failed', e));
     closeModal();
     render();
   });
@@ -1278,7 +1311,7 @@ document.getElementById('rating-save').addEventListener('click', () => {
   f.watchedDate = new Date().toISOString();
   if (ratingSarahVal) f.ratingSarah = ratingSarahVal; else delete f.ratingSarah;
   if (ratingJayVal)   f.ratingJay   = ratingJayVal;   else delete f.ratingJay;
-  saveData();
+  saveData().catch(e => console.warn('PrescFlix: save failed', e));
   closeRatingModal();
   activeTab = 'watched';
   render();
@@ -1291,7 +1324,7 @@ document.getElementById('rating-skip').addEventListener('click', () => {
   f.watchedDate = new Date().toISOString();
   delete f.ratingSarah;
   delete f.ratingJay;
-  saveData();
+  saveData().catch(e => console.warn('PrescFlix: save failed', e));
   closeRatingModal();
   activeTab = 'watched';
   render();
@@ -1408,7 +1441,7 @@ function renderSeasonsList() {
       const newName = input.value.trim();
       if (!newName) return;
       const season = seasons.find(x => x.id === s.id);
-      if (season) { season.name = newName; saveData(); render(); renderSeasonsList(); }
+      if (season) { season.name = newName; saveData().catch(e => console.warn('PrescFlix: save failed', e)); render(); renderSeasonsList(); }
     });
     row.querySelector('.season-delete-btn').addEventListener('click', () => {
       const filmCount = films.filter(f => f.seasonId === s.id).length;
@@ -1418,7 +1451,7 @@ function renderSeasonsList() {
       if (!window.confirm(msg)) return;
       seasons = seasons.filter(x => x.id !== s.id);
       films.forEach(f => { if (f.seasonId === s.id) delete f.seasonId; });
-      saveData();
+      saveData().catch(e => console.warn('PrescFlix: save failed', e));
       render();
       renderSeasonsList();
     });
@@ -1443,6 +1476,115 @@ document.getElementById('manage-seasons-btn').addEventListener('click', openMana
 document.getElementById('seasons-overlay-close').addEventListener('click', closeManageSeasons);
 document.getElementById('seasons-overlay').addEventListener('click', e => {
   if (e.target === document.getElementById('seasons-overlay')) closeManageSeasons();
+});
+
+// ── Note modal ─────────────────────────────────────────────────────────────
+let notePendingFilm = null;
+
+function renderNotesThread(film) {
+  const thread = document.getElementById('notes-thread');
+  if (!thread) return;
+  const notes = film.notes || [];
+  if (!notes.length) {
+    thread.innerHTML = '<p class="notes-empty">No notes yet. Be the first to leave one!</p>';
+    return;
+  }
+  thread.innerHTML = notes.map(note => {
+    const side    = note.author === 'Sarah' ? 'sarah' : 'jay';
+    const timeStr = note.timestamp ? formatWatchedDate(note.timestamp) : '';
+    return `<div class="note-bubble note-bubble--${side}">
+      <span class="note-bubble__author">${esc(note.author)}</span>
+      <p class="note-bubble__text">${esc(note.text)}</p>
+      <div class="note-bubble__footer">
+        <span class="note-bubble__time">${esc(timeStr)}</span>
+        <button class="note-bubble__delete" data-note-id="${esc(note.id)}" aria-label="Delete note" title="Delete note">&#x2715;</button>
+      </div>
+    </div>`;
+  }).join('');
+  thread.scrollTop = thread.scrollHeight;
+  thread.querySelectorAll('.note-bubble__delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!notePendingFilm) return;
+      if (!window.confirm('Delete this note?')) return;
+      const f = films.find(fi => fi.id === notePendingFilm.id);
+      if (!f) return;
+      const removed = f.notes.find(n => n.id === btn.dataset.noteId);
+      f.notes = (f.notes || []).filter(n => n.id !== btn.dataset.noteId);
+      try {
+        await saveData();
+      } catch (err) {
+        if (removed) f.notes.push(removed); // roll back
+      }
+      notePendingFilm = f;
+      renderNotesThread(f);
+      render();
+    });
+  });
+}
+
+function openNoteModal(film) {
+  notePendingFilm = film;
+  document.getElementById('note-film-name').textContent = film.title;
+  document.getElementById('note-text').value            = '';
+  document.getElementById('note-error').textContent     = '';
+  document.querySelectorAll('input[name="noteAuthor"]').forEach(r => { r.checked = false; });
+  renderNotesThread(film);
+  const overlay = document.getElementById('note-overlay');
+  overlay.setAttribute('aria-hidden', 'false');
+  overlay.classList.add('open');
+  document.getElementById('note-text').focus();
+}
+
+function closeNoteModal() {
+  const overlay = document.getElementById('note-overlay');
+  if (!overlay) return;
+  overlay.setAttribute('aria-hidden', 'true');
+  overlay.classList.remove('open');
+  notePendingFilm = null;
+}
+
+document.getElementById('note-modal-close').addEventListener('click', closeNoteModal);
+document.getElementById('note-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('note-overlay')) closeNoteModal();
+});
+
+// Send on Enter (Shift+Enter for newline)
+document.getElementById('note-text').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById('note-save').click();
+  }
+});
+
+document.getElementById('note-save').addEventListener('click', async () => {
+  if (!notePendingFilm) return;
+  const text    = document.getElementById('note-text').value.trim();
+  const author  = (document.querySelector('input[name="noteAuthor"]:checked') || {}).value || '';
+  const errorEl = document.getElementById('note-error');
+  if (!text)   { errorEl.textContent = 'Please enter a note.';                    return; }
+  if (!author) { errorEl.textContent = 'Please select who is leaving this note.'; return; }
+  errorEl.textContent = '';
+  const f = films.find(fi => fi.id === notePendingFilm.id);
+  if (!f) return;
+  if (!Array.isArray(f.notes)) f.notes = [];
+  f.notes.push({ id: String(Date.now()), author, text, timestamp: new Date().toISOString() });
+  notePendingFilm = f;
+  const sendBtn = document.getElementById('note-save');
+  sendBtn.disabled = true;
+  try {
+    await saveData();
+  } catch (err) {
+    errorEl.textContent = 'Failed to save note. Please try again.';
+    f.notes.pop(); // roll back the optimistic push
+    notePendingFilm = f;
+    renderNotesThread(f);
+    sendBtn.disabled = false;
+    return;
+  }
+  sendBtn.disabled = false;
+  document.getElementById('note-text').value = '';
+  renderNotesThread(f);
+  render();
 });
 
 // ── Boot ───────────────────────────────────────────────────────────────────
