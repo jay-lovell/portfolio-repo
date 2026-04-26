@@ -1067,6 +1067,24 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator {
   background: rgba(95, 211, 185, 0.12);
 }
 
+.picker-expand-btn {
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px dashed #444;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.picker-expand-btn:hover {
+  border-color: var(--muted);
+  color: var(--text);
+}
+
 /* ── Genre chips on card ───────────────────────────────────────── */
 .film-genres {
   display: flex;
@@ -1384,30 +1402,31 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator {
 /* ── Modal delete button (edit mode only) ───────────────────────── */
 .modal-delete-btn {
   display: none;
-  background: none;
-  border: 1px solid rgba(255, 80, 80, 0.4);
-  color: #ff6b7a;
+  width: 100%;
+  background: #c0392b;
+  border: none;
+  color: #fff;
   font: inherit;
-  font-size: 0.85rem;
-  padding: 8px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 11px 20px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: background 0.15s, transform 0.15s;
 }
 
 .modal-delete-btn:hover {
-  background: rgba(192, 57, 43, 0.15);
-  border-color: #ff6b7a;
-  color: #fff;
+  background: #a93226;
+  transform: translateY(-1px);
 }
 
 .modal-form-actions {
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  align-items: center;
 }
 
 .modal-form-actions .form-submit {
-  flex: 1;
+  width: 100%;
   margin-top: 0;
 }
