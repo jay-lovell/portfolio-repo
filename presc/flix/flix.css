@@ -312,9 +312,8 @@ body {
   font-size: 0.9rem;
   font-weight: 700;
   line-height: 1.2;
-  /* rounded only on the bottom-right; card overflow:hidden clips the card corner */
+  /* rounded only on the bottom-right; poster overflow:hidden clips the corner */
   border-radius: 0 0 10px 0;
-  border: none;
   pointer-events: auto;
   cursor: pointer;
   z-index: 3;
