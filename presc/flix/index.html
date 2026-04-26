@@ -39,6 +39,10 @@
         <span class="reorder-hint" id="reorder-hint">Drag to reorder</span>
       </div>
 
+      <div class="search-row">
+        <input class="search-input" id="filter-search" type="search" placeholder="Search by title…" autocomplete="off" spellcheck="false">
+      </div>
+
       <div class="filter-bar" id="filter-bar">
         <div class="filter-row">
           <span class="filter-label">Service</span>
@@ -50,7 +54,9 @@
             <button class="filter-chip" data-filter="service" data-value="NowTV"><img class="service-logo" src="https://www.google.com/s2/favicons?domain=nowtv.com&sz=32" alt="" loading="lazy" onerror="this.remove()"> NowTV</button>
             <button class="filter-chip" data-filter="service" data-value="Paramount"><img class="service-logo" src="https://www.google.com/s2/favicons?domain=paramountplus.com&sz=32" alt="" loading="lazy" onerror="this.remove()"> Paramount</button>
             <button class="filter-chip" data-filter="service" data-value="Amazon Prime"><img class="service-logo" src="https://www.google.com/s2/favicons?domain=primevideo.com&sz=32" alt="" loading="lazy" onerror="this.remove()"> Prime</button>
-            <button class="filter-chip" data-filter="service" data-value="DVD / Blu-ray">💿 DVD</button>
+            <button class="filter-chip" data-filter="service" data-value="Apple TV+"><img class="service-logo" src="https://www.google.com/s2/favicons?domain=tv.apple.com&sz=32" alt="" loading="lazy" onerror="this.remove()"> Apple TV+</button>
+            <button class="filter-chip" data-filter="service" data-value="DVD">💿 DVD</button>
+            <button class="filter-chip" data-filter="service" data-value="Blu-ray"><img class="service-logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Blu-ray_Disc.svg/120px-Blu-ray_Disc.svg.png" alt="" loading="lazy" onerror="this.outerHTML='📀'"> Blu-ray</button>
             <button class="filter-chip" data-filter="service" data-value="Cinema">🎬 Cinema</button>
             <button class="filter-chip" data-filter="service" data-value="Unknown">❓ Unknown</button>
           </div>
@@ -86,6 +92,7 @@
       </div>
 
       <div class="film-grid" id="film-grid" aria-label="Film collection"></div>
+      <p class="cross-tab-hint" id="cross-tab-hint" hidden></p>
     </section>
   </main>
 
@@ -122,10 +129,10 @@
           Service
           <div class="service-multi-picker" id="field-services" role="group" aria-label="Select services"></div>
         </div>
-        <label class="form-label">
+        <div class="form-label">
           Genre
-          <input class="form-input" id="field-genre" type="text" placeholder="e.g. Action" maxlength="30" autocomplete="off">
-        </label>
+          <div class="genre-multi-picker" id="field-genres" role="group" aria-label="Select genres"></div>
+        </div>
         <label class="form-label">
           Season
           <select class="form-select" id="field-season">

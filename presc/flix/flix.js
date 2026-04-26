@@ -38,12 +38,48 @@ async function tmdbSearch(query) {
     if (!res.ok) return [];
     const data = await res.json();
     return (data.results || []).slice(0, 5).map(r => ({
+      tmdbId:    r.id,
       title:     r.title,
       year:      r.release_date ? parseInt(r.release_date.slice(0, 4), 10) : null,
       posterUrl: r.poster_path ? `${TMDB_IMG}${r.poster_path}` : null,
       thumbUrl:  r.poster_path ? `${TMDB_THUMB}${r.poster_path}` : null,
       genreIds:  r.genre_ids  || [],
     }));
+  } catch { return []; }
+}
+
+// ── TMDB watch providers (GB only) ────────────────────────────────
+// Maps TMDB provider display names → our internal service keys.
+// Covers flatrate (streaming) providers only — skip rent/buy.
+const TMDB_PROVIDER_MAP = {
+  'Netflix':              'Netflix',
+  'Amazon Prime Video':   'Amazon Prime',
+  'Prime Video':          'Amazon Prime',
+  'Apple TV Plus':        'Apple TV+',
+  'Apple TV+':            'Apple TV+',
+  'Now TV':               'NowTV',
+  'Now':                  'NowTV',
+  'Paramount+':           'Paramount',
+  'BBC iPlayer':          'BBC iPlayer',
+  'Disney Plus':          'Disney+',
+  'Disney+':              'Disney+',
+};
+
+async function tmdbProviders(tmdbId) {
+  try {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/movie/${tmdbId}/watch/providers`,
+      { headers: { Authorization: `Bearer ${TMDB_BEARER}` } }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    const gb = (data.results || {}).GB;
+    if (!gb) return [];
+    const flatrate = gb.flatrate || [];
+    return flatrate
+      .map(p => TMDB_PROVIDER_MAP[p.provider_name])
+      .filter(Boolean)
+      .filter((v, i, a) => a.indexOf(v) === i); // dedupe
   } catch { return []; }
 }
 
@@ -93,6 +129,14 @@ async function loadData() {
             } else if (!film.services) {
               film.services = [];
             }
+            // migrate legacy single genre string → array
+            if (film.genre && !film.genres) {
+              film.genres = [film.genre];
+              delete film.genre;
+            } else if (!film.genres) {
+              film.genres = [];
+            }
+            if (!film.genres) film.genres = [];
             return film;
           })
         : DEFAULT_FILMS.slice().map(f => ({ ...f, watched: false, services: [] }));
@@ -211,10 +255,12 @@ function formatWatchedDate(isoString) {
 const SERVICE_ICONS = {
   'Netflix':       { url: 'https://www.google.com/s2/favicons?domain=netflix.com&sz=32',        fallback: '🎞️' },
   'Amazon Prime':  { url: 'https://www.google.com/s2/favicons?domain=primevideo.com&sz=32',     fallback: '📦'  },
+  'Apple TV+':     { url: 'https://www.google.com/s2/favicons?domain=tv.apple.com&sz=32',        fallback: '🍎'  },
   'NowTV':         { url: 'https://www.google.com/s2/favicons?domain=nowtv.com&sz=32',          fallback: '📡'  },
   'Paramount':     { url: 'https://www.google.com/s2/favicons?domain=paramountplus.com&sz=32',  fallback: '⛰️' },
   'BBC iPlayer':   { url: 'https://www.google.com/s2/favicons?domain=bbc.co.uk&sz=32',         fallback: '📺'  },
-  'DVD / Blu-ray': { url: null,                                                                  fallback: '💿'  },
+  'DVD':           { url: null,                                                                  fallback: '💿'  },
+  'Blu-ray':       { url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Blu-ray_Disc.svg/120px-Blu-ray_Disc.svg.png', fallback: '📀'  },
   'Disney+':       { url: 'https://www.google.com/s2/favicons?domain=disneyplus.com&sz=32',     fallback: '🏰'  },
   'Cinema':        { url: null,                                                                  fallback: '🎬'  },
   'Unknown':       { url: null,                                                                  fallback: '❓'  },
@@ -229,7 +275,11 @@ function serviceIcon(name) {
 }
 
 // ── Service multi-picker (form) ────────────────────────────────────
-const ALL_SERVICES = Object.keys(SERVICE_ICONS);
+// Excludes legacy "DVD / Blu-ray" (kept in SERVICE_ICONS for display on existing cards only)
+const ALL_SERVICES = [
+  'Netflix', 'Amazon Prime', 'Apple TV+', 'NowTV', 'Paramount',
+  'BBC iPlayer', 'Disney+', 'DVD', 'Blu-ray', 'Cinema', 'Unknown',
+];
 
 function buildServicePicker(selectedServices = []) {
   const container = document.getElementById('field-services');
@@ -245,7 +295,7 @@ function buildServicePicker(selectedServices = []) {
     btn.classList.toggle('selected', isSelected);
     const svc = SERVICE_ICONS[name];
     const iconHtml = svc.url
-      ? `<img class="service-logo" src="${svc.url}" alt="" loading="lazy" onerror="this.outerHTML='${svc.fallback}'">` 
+      ? `<img class="service-logo" src="${svc.url}" alt="" loading="lazy" onerror="this.outerHTML='${svc.fallback}'">`
       : svc.fallback;
     btn.innerHTML = `${iconHtml}<span>${esc(name)}</span>`;
     btn.addEventListener('click', () => {
@@ -263,6 +313,41 @@ function getSelectedServices() {
     .map(b => b.dataset.service);
 }
 
+// ── Genre multi-picker (form) ──────────────────────────────────────
+const TMDB_GENRE_NAMES = [
+  'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary',
+  'Drama', 'Family', 'Fantasy', 'History', 'Horror', 'Music', 'Mystery',
+  'Romance', 'Science Fiction', 'Thriller', 'War', 'Western',
+];
+
+function buildGenrePicker(selectedGenres = []) {
+  const container = document.getElementById('field-genres');
+  if (!container) return;
+  container.innerHTML = '';
+  TMDB_GENRE_NAMES.forEach(name => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'genre-picker-btn';
+    btn.dataset.genre = name;
+    const isSelected = selectedGenres.includes(name);
+    btn.setAttribute('aria-pressed', String(isSelected));
+    btn.classList.toggle('selected', isSelected);
+    btn.textContent = name;
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('selected');
+      btn.setAttribute('aria-pressed', String(btn.classList.contains('selected')));
+    });
+    container.appendChild(btn);
+  });
+}
+
+function getSelectedGenres() {
+  const container = document.getElementById('field-genres');
+  if (!container) return [];
+  return Array.from(container.querySelectorAll('.genre-picker-btn.selected'))
+    .map(b => b.dataset.genre);
+}
+
 // ── PRESC rating: average of Jay+Sarah rounded DOWN to nearest 0.5 ────────
 function prescRating(rJay, rSarah) {
   if (rJay == null || rSarah == null) return null;
@@ -278,6 +363,12 @@ function starsHTML(rating, max = 5) {
     else                        html += '<span class="star empty">&#9733;</span>';
   }
   return `<span class="stars-display">${html}</span>`;
+}
+
+// ── External film link ────────────────────────────────────────────────────
+function filmExternalLink(film) {
+  if (film.tmdbId) return `https://www.themoviedb.org/movie/${film.tmdbId}`;
+  return `https://www.imdb.com/find/?q=${encodeURIComponent(`${film.title} ${film.year || ''}`).trim()}`;
 }
 
 // ── HTML escape ────────────────────────────────────────────────────────────
@@ -303,11 +394,13 @@ let filterUser    = '';
 let filterSeason  = '';
 let filterWatched = '';   // '', 'top', 'controversial'
 let filterGenre   = '';
+let filterSearch  = '';
 let watchedSort   = 'date'; // 'date', 'presc', 'sarah', 'jay', 'title'
 let editingFilmId = null;
 
 // TMDB suggestion state
 let pendingTmdbPoster = undefined; // undefined = no selection; null = selected film with no poster; string = URL
+let pendingTmdbId    = undefined;  // undefined = no selection; number = TMDB movie ID
 let tmdbDebounceTimer = null;
 let tmdbSearchSeq     = 0;         // used to discard stale responses
 
@@ -365,7 +458,7 @@ function render() {
   const genreChipsEl   = document.getElementById('filter-genre');
   if (genreFilterRow && genreChipsEl) {
     const allTabFilms  = films.filter(f => (activeTab === 'watched') === f.watched);
-    const uniqueGenres = [...new Set(allTabFilms.map(f => f.genre).filter(Boolean))].sort();
+    const uniqueGenres = [...new Set(allTabFilms.flatMap(f => Array.isArray(f.genres) ? f.genres : (f.genre ? [f.genre] : [])))].sort();
     genreFilterRow.style.display = uniqueGenres.length ? '' : 'none';
     if (uniqueGenres.length) {
       genreChipsEl.innerHTML = '';
@@ -400,7 +493,8 @@ function render() {
       if (filterSeason === 'none') return !f.seasonId;
       return f.seasonId === filterSeason;
     })
-    .filter(f => !filterGenre || f.genre === filterGenre)
+    .filter(f => !filterGenre || (Array.isArray(f.genres) ? f.genres : (f.genre ? [f.genre] : [])).includes(filterGenre))
+    .filter(f => !filterSearch || f.title.toLowerCase().includes(filterSearch.toLowerCase()))
     .filter(f => {
       if (activeTab !== 'watched' || !filterWatched) return true;
       const pr = prescRating(f.ratingJay, f.ratingSarah);
@@ -428,6 +522,27 @@ function render() {
     tabFilms = tabFilms.slice().sort((a, b) => sortKey(a.title).localeCompare(sortKey(b.title)));
   }
 
+  // Cross-tab search hint (only when search is active)
+  const crossHint = document.getElementById('cross-tab-hint');
+  if (crossHint) {
+    if (filterSearch) {
+      const otherTab = activeTab === 'queue' ? 'watched' : 'queue';
+      const otherLabel = activeTab === 'queue' ? 'Watched' : 'Queue';
+      const otherCount = films
+        .filter(f => (otherTab === 'watched') === f.watched)
+        .filter(f => f.title.toLowerCase().includes(filterSearch.toLowerCase()))
+        .length;
+      if (otherCount > 0) {
+        crossHint.textContent = `${otherCount} result${otherCount === 1 ? '' : 's'} also in ${otherLabel}`;
+        crossHint.hidden = false;
+      } else {
+        crossHint.hidden = true;
+      }
+    } else {
+      crossHint.hidden = true;
+    }
+  }
+
   const grid = document.getElementById('film-grid');
   grid.setAttribute('data-tab', activeTab);
   grid.innerHTML = '';
@@ -444,12 +559,15 @@ function render() {
       ? queuePos.get(film.id)
       : (film.watchedDate ? formatWatchedDate(film.watchedDate) : null);
     const badgeHTML = badgeContent != null
-      ? `<span class="queue-badge" aria-hidden="true">${esc(String(badgeContent))}</span>`
+      ? `<button class="queue-badge" title="Edit film" aria-label="Edit ${esc(film.title)}">${esc(String(badgeContent))}</button>`
       : '';
     const filmSeason = film.seasonId ? seasons.find(s => s.id === film.seasonId) : null;
     const seasonLabelHTML = filmSeason
       ? `<span class="film-season">${esc(filmSeason.name)}</span>` : '';
-    const genreHTML = film.genre ? `<span class="film-genre">${esc(film.genre)}</span>` : '';
+    const filmGenres = Array.isArray(film.genres) ? film.genres : (film.genre ? [film.genre] : []);
+    const genreHTML = filmGenres.length
+      ? `<div class="film-genres">${filmGenres.map(g => `<span class="film-genre">${esc(g)}</span>`).join('')}</div>`
+      : '';
     const filmServices = Array.isArray(film.services) ? film.services : (film.service ? [film.service] : []);
     const metaHTML = (filmServices.length || film.addedBy)
       ? `<div class="film-meta">
@@ -470,22 +588,18 @@ function render() {
       : posterSVG(film.id);
     card.innerHTML = `
       ${badgeHTML}
-      <div class="film-poster" role="button" tabindex="0" title="Edit film">${posterHTML}${posterOverlayHTML}</div>
+      <a class="film-poster" href="${esc(filmExternalLink(film))}" target="_blank" rel="noopener noreferrer" title="View on TMDB">${posterHTML}${posterOverlayHTML}${seasonLabelHTML}</a>
       <div class="film-info">
         <span class="film-title">${esc(film.title)}</span>
         <span class="film-year">${film.year}</span>
         ${genreHTML}
-        ${seasonLabelHTML}
         ${metaHTML}
       </div>
       <button class="watch-toggle" aria-label="${toggleLabel}" title="${toggleLabel}">&#10003;</button>
       <button class="delete-btn" aria-label="Remove ${esc(film.title)}" title="Remove film">&#x1F5D1;</button>`;
 
-    const poster = card.querySelector('.film-poster');
-    poster.addEventListener('click', () => openModal(film));
-    poster.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(film); }
-    });
+    const badge = card.querySelector('.queue-badge');
+    if (badge) badge.addEventListener('click', e => { e.stopPropagation(); openModal(film); });
 
     card.querySelector('.watch-toggle').addEventListener('click', e => {
       e.stopPropagation();
@@ -824,6 +938,18 @@ document.getElementById('filter-season').addEventListener('change', e => {
   render();
 });
 
+// ── Search filter ───────────────────────────────────────────────────────────────
+document.getElementById('filter-search').addEventListener('input', e => {
+  filterSearch = e.target.value.trim();
+  render();
+});
+
+// Clicking the cross-tab hint switches to that tab
+document.getElementById('cross-tab-hint').addEventListener('click', () => {
+  activeTab = activeTab === 'queue' ? 'watched' : 'queue';
+  render();
+});
+
 // ── Add film modal ────────────────────────────────────────────────────────────
 const modalOverlay = document.getElementById('modal-overlay');
 const addFab       = document.getElementById('add-fab');
@@ -858,6 +984,7 @@ function toggleNewSeasonInput() {
 function openModal(film = null) {
   editingFilmId     = film ? film.id : null;
   pendingTmdbPoster = undefined;
+  pendingTmdbId     = undefined;
   clearTimeout(tmdbDebounceTimer);
   const tmdbDrop = document.getElementById('tmdb-suggestions');
   if (tmdbDrop) { tmdbDrop.hidden = true; tmdbDrop.innerHTML = ''; }
@@ -867,13 +994,13 @@ function openModal(film = null) {
   if (modalDeleteBtn) modalDeleteBtn.style.display = film ? '' : 'none';
   populateSeasonOptions(film ? film.seasonId : '');
   buildServicePicker(film ? (film.services || []) : []);
+  buildGenrePicker(film ? (film.genres || []) : []);
   const watchedDateLabel = document.getElementById('watched-date-label');
   if (film) {
     document.getElementById('field-title').value    = film.title    || '';
     document.getElementById('field-year').value     = film.year     || '';
     const radio = addFilmForm.querySelector(`input[name="addedBy"][value="${esc(film.addedBy || '')}"]`);
     if (radio) radio.checked = true;
-    document.getElementById('field-genre').value = film.genre || '';
     if (film.watched && film.watchedDate) {
       document.getElementById('field-watched-date').value = film.watchedDate.slice(0, 10);
       if (watchedDateLabel) watchedDateLabel.style.display = '';
@@ -891,6 +1018,7 @@ function openModal(film = null) {
 function closeModal() {
   editingFilmId     = null;
   pendingTmdbPoster = undefined;
+  pendingTmdbId     = undefined;
   clearTimeout(tmdbDebounceTimer);
   const tmdbDrop = document.getElementById('tmdb-suggestions');
   if (tmdbDrop) { tmdbDrop.hidden = true; tmdbDrop.innerHTML = ''; }
@@ -948,7 +1076,7 @@ addFilmForm.addEventListener('submit', async e => {
   const yearRaw  = document.getElementById('field-year').value.trim();
   const addedBy  = (addFilmForm.querySelector('input[name="addedBy"]:checked') || {}).value || '';
   const services = getSelectedServices();
-  const genre    = document.getElementById('field-genre').value.trim();
+  const genres   = getSelectedGenres();
   let   seasonId = document.getElementById('field-season').value;
 
   if (!title)   { formError.textContent = 'Please enter a title.'; return; }
@@ -976,6 +1104,9 @@ addFilmForm.addEventListener('submit', async e => {
       if (pendingTmdbPoster !== undefined) {
         if (pendingTmdbPoster) f.posterUrl = pendingTmdbPoster; else delete f.posterUrl;
       }
+      if (pendingTmdbId !== undefined) {
+        if (pendingTmdbId) f.tmdbId = pendingTmdbId; else delete f.tmdbId;
+      }
       if (f.watched) {
         const dateVal = document.getElementById('field-watched-date').value;
         if (dateVal) f.watchedDate = new Date(dateVal + 'T12:00:00').toISOString();
@@ -983,15 +1114,17 @@ addFilmForm.addEventListener('submit', async e => {
       if (addedBy)          f.addedBy  = addedBy;  else delete f.addedBy;
       if (services.length)  f.services = services; else delete f.services;
       delete f.service; // remove any legacy single-service field
-      if (genre)            f.genre    = genre;    else delete f.genre;
+      if (genres.length)    f.genres   = genres;   else delete f.genres;
+      delete f.genre;   // remove any legacy single-genre field
       if (seasonId) f.seasonId = seasonId; else delete f.seasonId;
     }
   } else {
     const newFilm = { id: Date.now(), title, year, watched: false };
     if (pendingTmdbPoster)  newFilm.posterUrl = pendingTmdbPoster;
+    if (pendingTmdbId)      newFilm.tmdbId    = pendingTmdbId;
     if (addedBy)            newFilm.addedBy   = addedBy;
     if (services.length)    newFilm.services  = services;
-    if (genre)              newFilm.genre     = genre;
+    if (genres.length)      newFilm.genres    = genres;
     if (seasonId)           newFilm.seasonId  = seasonId;
     films.push(newFilm);
   }
@@ -1166,15 +1299,20 @@ function initTmdbSearch() {
         <span class="tmdb-suggestion-title">${esc(r.title)}</span>
         ${r.year ? `<span class="tmdb-suggestion-year">${r.year}</span>` : ''}
       </span>`;
-      item.addEventListener('click', () => {
+      item.addEventListener('click', async () => {
         titleInput.value  = r.title;
         if (r.year) yearInput.value = r.year;
         pendingTmdbPoster = r.posterUrl;
-        // Pre-fill genre from first TMDB genre_id if available
+        pendingTmdbId    = r.tmdbId;
+        // Pre-fill genres from all matching TMDB genre_ids
         if (r.genreIds && r.genreIds.length) {
-          const genreField = document.getElementById('field-genre');
-          const name = genreMap.get(r.genreIds[0]);
-          if (genreField && name) genreField.value = name;
+          const names = r.genreIds.map(id => genreMap.get(id)).filter(Boolean);
+          if (names.length) buildGenrePicker(names);
+        }
+        // Auto-select UK streaming services from TMDB watch providers
+        if (r.tmdbId) {
+          const providers = await tmdbProviders(r.tmdbId);
+          if (providers.length) buildServicePicker(providers);
         }
         hideSuggestions();
         titleInput.focus();
@@ -1187,6 +1325,7 @@ function initTmdbSearch() {
   titleInput.addEventListener('input', () => {
     clearTimeout(tmdbDebounceTimer);
     pendingTmdbPoster = undefined;
+    pendingTmdbId     = undefined;
     const q = titleInput.value.trim();
     if (q.length < 3) { hideSuggestions(); return; }
     const seq = ++tmdbSearchSeq;
