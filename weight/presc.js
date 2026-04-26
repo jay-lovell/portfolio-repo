@@ -34,9 +34,9 @@ const MS_PER_WEEK    = 7 * 86_400_000;
 
 export function getMonday(date) {
   const d = new Date(date);
-  const day = d.getDay();                       // 0 = Sun … 6 = Sat
-  d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
-  d.setHours(0, 0, 0, 0);
+  const day = d.getUTCDay();                    // 0 = Sun … 6 = Sat
+  d.setUTCDate(d.getUTCDate() - day + (day === 0 ? -6 : 1));
+  d.setUTCHours(0, 0, 0, 0);
   return d;
 }
 
