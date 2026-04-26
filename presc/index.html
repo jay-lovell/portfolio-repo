@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="../images/presc.svg" />
   <title>PRESC</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" />
@@ -35,25 +36,15 @@
 
     /* ── Logo ──────────────────────────────────────────────── */
     .logo-wrap {
-      width: 96px;
-      height: 96px;
-      border-radius: 50%;
-      overflow: hidden;
-      background: #0a0a0a;
-      border: 1px solid rgba(95,211,185,0.28);
-      box-shadow: 0 0 40px rgba(95,211,185,0.12);
+      width: 100px;
+      height: 100px;
       margin-bottom: 20px;
     }
 
     .logo-wrap img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
-      object-position: top center;
-      border-radius: 50%;
-      filter: invert(1);
-      transform: scale(1.4);
-      transform-origin: 50% 0%;
+      object-fit: contain;
     }
 
     /* ── Wordmark ──────────────────────────────────────────── */
@@ -139,7 +130,7 @@
 <body>
 
   <div class="logo-wrap">
-    <img src="../images/presc.png" alt="PRESC logo" />
+    <img src="../images/presc.svg" alt="PRESC logo" />
   </div>
 
   <h1 class="wordmark">PRESC</h1>
