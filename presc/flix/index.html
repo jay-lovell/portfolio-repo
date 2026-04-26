@@ -35,7 +35,7 @@
           <option value="sarah">Sarah's Rating</option>
           <option value="jay">Jay's Rating</option>
         </select>
-        <button class="filter-toggle-btn" id="filter-toggle-btn" aria-expanded="true" aria-controls="filter-bar" title="Toggle filters">Filters ▾</button>
+        <button class="filter-toggle-btn" id="filter-toggle-btn" aria-expanded="false" aria-controls="filter-bar" title="Toggle filters">Filters ▸</button>
         <span class="reorder-hint" id="reorder-hint">Drag to reorder</span>
       </div>
 
@@ -43,7 +43,7 @@
         <input class="search-input" id="filter-search" type="search" placeholder="Search by title…" autocomplete="off" spellcheck="false">
       </div>
 
-      <div class="filter-bar" id="filter-bar">
+      <div class="filter-bar collapsed" id="filter-bar">
         <div class="filter-row">
           <span class="filter-label">Service</span>
           <div class="filter-chips" id="filter-service" role="group" aria-label="Filter by service">
