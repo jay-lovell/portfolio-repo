@@ -587,7 +587,6 @@ function render() {
       ? `<img class="film-poster-img" src="${esc(film.posterUrl)}" alt="" loading="lazy">`
       : posterSVG(film.id);
     card.innerHTML = `
-      ${badgeHTML}
       <a class="film-poster" href="${esc(filmExternalLink(film))}" target="_blank" rel="noopener noreferrer" title="View on TMDB">${posterHTML}${posterOverlayHTML}${seasonLabelHTML}</a>
       <div class="film-info">
         <span class="film-title">${esc(film.title)}</span>
@@ -595,8 +594,8 @@ function render() {
         ${genreHTML}
         ${metaHTML}
       </div>
-      <button class="watch-toggle" aria-label="${toggleLabel}" title="${toggleLabel}">&#10003;</button>
-      <button class="delete-btn" aria-label="Remove ${esc(film.title)}" title="Remove film">&#x1F5D1;</button>`;
+      ${badgeHTML}
+      <button class="watch-toggle" aria-label="${toggleLabel}" title="${toggleLabel}">&#10003;</button>`;
 
     const badge = card.querySelector('.queue-badge');
     if (badge) badge.addEventListener('click', e => { e.stopPropagation(); openModal(film); });
@@ -615,14 +614,6 @@ function render() {
       } else {
         openRatingModal(f);
       }
-    });
-
-    card.querySelector('.delete-btn').addEventListener('click', e => {
-      e.stopPropagation();
-      if (!window.confirm(`Remove "${film.title}" from your list?`)) return;
-      films = films.filter(fi => fi.id !== film.id);
-      saveData();
-      render();
     });
 
     grid.appendChild(card);
@@ -1037,7 +1028,7 @@ modalClose.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-// Modal delete button (used on touch/mobile where card-level delete is hidden)
+// Modal delete button (Edit page — accessible on all devices)
 const modalDeleteBtn = document.getElementById('modal-delete-btn');
 if (modalDeleteBtn) {
   modalDeleteBtn.addEventListener('click', () => {
