@@ -863,6 +863,8 @@ function openModal(film = null) {
   if (tmdbDrop) { tmdbDrop.hidden = true; tmdbDrop.innerHTML = ''; }
   document.getElementById('modal-title').textContent = film ? 'Edit Film' : 'Add a Film';
   document.querySelector('.form-submit').textContent  = film ? 'Save Changes' : 'Add to Queue';
+  const modalDeleteBtn = document.getElementById('modal-delete-btn');
+  if (modalDeleteBtn) modalDeleteBtn.style.display = film ? '' : 'none';
   populateSeasonOptions(film ? film.seasonId : '');
   buildServicePicker(film ? (film.services || []) : []);
   const watchedDateLabel = document.getElementById('watched-date-label');
@@ -903,6 +905,38 @@ addFab.addEventListener('click', () => openModal());
 modalClose.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// Modal delete button (used on touch/mobile where card-level delete is hidden)
+const modalDeleteBtn = document.getElementById('modal-delete-btn');
+if (modalDeleteBtn) {
+  modalDeleteBtn.addEventListener('click', () => {
+    if (!editingFilmId) return;
+    const film = films.find(fi => fi.id === editingFilmId);
+    if (!film) return;
+    if (!window.confirm(`Remove "${film.title}" from your list?`)) return;
+    films = films.filter(fi => fi.id !== editingFilmId);
+    saveData();
+    closeModal();
+    render();
+  });
+}
+
+// ── Filter toggle (mobile) ────────────────────────────────────────────────
+const filterToggleBtn = document.getElementById('filter-toggle-btn');
+const filterBar       = document.getElementById('filter-bar');
+if (filterToggleBtn && filterBar) {
+  // Collapse by default on narrow screens
+  if (window.innerWidth <= 680) {
+    filterBar.classList.add('collapsed');
+    filterToggleBtn.setAttribute('aria-expanded', 'false');
+    filterToggleBtn.textContent = 'Filters ▸';
+  }
+  filterToggleBtn.addEventListener('click', () => {
+    const isCollapsed = filterBar.classList.toggle('collapsed');
+    filterToggleBtn.setAttribute('aria-expanded', String(!isCollapsed));
+    filterToggleBtn.textContent = isCollapsed ? 'Filters ▸' : 'Filters ▾';
+  });
+}
 
 document.getElementById('field-season').addEventListener('change', toggleNewSeasonInput);
 

@@ -145,9 +145,8 @@ body {
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     padding-bottom: 12px;
-    /* fade-out edges */
-    mask-image: linear-gradient(to right, transparent 0%, black 5%, black 92%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 92%, transparent 100%);
+    /* extra padding so first/last cards aren't clipped */
+    padding-right: 16px;
   }
   .film-grid::-webkit-scrollbar { display: none; }
 
@@ -1221,7 +1220,80 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator {
   .film-card .watch-toggle {
     opacity: 0.7;
   }
+  /* Hide the card-level delete button on touch — use the edit modal to delete */
   .film-card .delete-btn {
-    opacity: 0.4;
+    display: none;
   }
+}
+
+/* ── Filter toggle button (mobile only) ────────────────────────── */
+.filter-toggle-btn {
+  display: none;
+}
+
+@media (max-width: 680px) {
+  .filter-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--surface2);
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.7rem;
+    padding: 3px 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+
+  .filter-toggle-btn[aria-expanded="true"] {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(95, 211, 185, 0.1);
+  }
+
+  .filter-bar {
+    overflow: hidden;
+    max-height: 400px;
+    transition: max-height 0.3s ease, opacity 0.25s ease, margin-bottom 0.25s ease;
+  }
+
+  .filter-bar.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+  }
+}
+
+/* ── Modal delete button (edit mode only) ───────────────────────── */
+.modal-delete-btn {
+  display: none;
+  background: none;
+  border: 1px solid rgba(255, 80, 80, 0.4);
+  color: #ff6b7a;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.modal-delete-btn:hover {
+  background: rgba(192, 57, 43, 0.15);
+  border-color: #ff6b7a;
+  color: #fff;
+}
+
+.modal-form-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.modal-form-actions .form-submit {
+  flex: 1;
+  margin-top: 0;
 }

@@ -35,6 +35,7 @@
           <option value="sarah">Sarah's Rating</option>
           <option value="jay">Jay's Rating</option>
         </select>
+        <button class="filter-toggle-btn" id="filter-toggle-btn" aria-expanded="true" aria-controls="filter-bar" title="Toggle filters">Filters ▾</button>
         <span class="reorder-hint" id="reorder-hint">Drag to reorder</span>
       </div>
 
@@ -140,7 +141,10 @@
           <input class="form-input" id="field-watched-date" type="date">
         </label>
         <p class="form-error" id="form-error" role="alert" aria-live="polite"></p>
-        <button type="submit" class="form-submit">Add to Queue</button>
+        <div class="modal-form-actions">
+          <button type="button" class="modal-delete-btn" id="modal-delete-btn" aria-label="Remove film">🗑 Remove</button>
+          <button type="submit" class="form-submit">Add to Queue</button>
+        </div>
       </form>
     </div>
   </div>
