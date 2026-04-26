@@ -9,7 +9,7 @@
 }
 
 body {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -221,11 +221,6 @@ select {
 }
 
 @media (max-width: 480px) {
-  .brand-bar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
   .row.columns-2 {
     grid-template-columns: 1fr;
   }

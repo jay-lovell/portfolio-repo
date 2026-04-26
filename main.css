@@ -14,3 +14,8 @@ h1, h2 {
   font-size: x-large;
   color: whitesmoke;
 }
+
+img {
+  max-width: 100%;
+  height: auto;
+}
