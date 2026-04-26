@@ -285,6 +285,7 @@ function buildServicePicker(selectedServices = []) {
   const container = document.getElementById('field-services');
   if (!container) return;
   container.innerHTML = '';
+  const totalUnselected = ALL_SERVICES.filter(s => !selectedServices.includes(s)).length;
   ALL_SERVICES.forEach(name => {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -298,12 +299,31 @@ function buildServicePicker(selectedServices = []) {
       ? `<img class="service-logo" src="${svc.url}" alt="" loading="lazy" onerror="this.outerHTML='${svc.fallback}'">`
       : svc.fallback;
     btn.innerHTML = `${iconHtml}<span>${esc(name)}</span>`;
+    if (!isSelected) btn.style.display = 'none';
     btn.addEventListener('click', () => {
       btn.classList.toggle('selected');
       btn.setAttribute('aria-pressed', String(btn.classList.contains('selected')));
     });
     container.appendChild(btn);
   });
+  if (totalUnselected > 0) {
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'picker-expand-btn';
+    toggle.textContent = `+ ${totalUnselected} more`;
+    let expanded = false;
+    toggle.addEventListener('click', () => {
+      expanded = !expanded;
+      if (expanded) {
+        container.querySelectorAll('.service-picker-btn').forEach(b => b.style.display = '');
+        toggle.textContent = 'Show less';
+      } else {
+        container.querySelectorAll('.service-picker-btn:not(.selected)').forEach(b => b.style.display = 'none');
+        toggle.textContent = `+ ${totalUnselected} more`;
+      }
+    });
+    container.appendChild(toggle);
+  }
 }
 
 function getSelectedServices() {
@@ -324,6 +344,7 @@ function buildGenrePicker(selectedGenres = []) {
   const container = document.getElementById('field-genres');
   if (!container) return;
   container.innerHTML = '';
+  const totalUnselected = TMDB_GENRE_NAMES.filter(n => !selectedGenres.includes(n)).length;
   TMDB_GENRE_NAMES.forEach(name => {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -333,12 +354,31 @@ function buildGenrePicker(selectedGenres = []) {
     btn.setAttribute('aria-pressed', String(isSelected));
     btn.classList.toggle('selected', isSelected);
     btn.textContent = name;
+    if (!isSelected) btn.style.display = 'none';
     btn.addEventListener('click', () => {
       btn.classList.toggle('selected');
       btn.setAttribute('aria-pressed', String(btn.classList.contains('selected')));
     });
     container.appendChild(btn);
   });
+  if (totalUnselected > 0) {
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'picker-expand-btn';
+    toggle.textContent = `+ ${totalUnselected} more`;
+    let expanded = false;
+    toggle.addEventListener('click', () => {
+      expanded = !expanded;
+      if (expanded) {
+        container.querySelectorAll('.genre-picker-btn').forEach(b => b.style.display = '');
+        toggle.textContent = 'Show less';
+      } else {
+        container.querySelectorAll('.genre-picker-btn:not(.selected)').forEach(b => b.style.display = 'none');
+        toggle.textContent = `+ ${totalUnselected} more`;
+      }
+    });
+    container.appendChild(toggle);
+  }
 }
 
 function getSelectedGenres() {
@@ -984,7 +1024,7 @@ function openModal(film = null) {
   document.getElementById('modal-title').textContent = film ? 'Edit Film' : 'Add a Film';
   document.querySelector('.form-submit').textContent  = film ? 'Save Changes' : 'Add to Queue';
   const modalDeleteBtn = document.getElementById('modal-delete-btn');
-  if (modalDeleteBtn) modalDeleteBtn.style.display = film ? '' : 'none';
+  if (modalDeleteBtn) modalDeleteBtn.style.display = film ? 'block' : 'none';
   populateSeasonOptions(film ? film.seasonId : '');
   buildServicePicker(film ? (film.services || []) : []);
   buildGenrePicker(film ? (film.genres || []) : []);
