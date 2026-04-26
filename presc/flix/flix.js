@@ -559,7 +559,7 @@ function render() {
       ? queuePos.get(film.id)
       : (film.watchedDate ? formatWatchedDate(film.watchedDate) : null);
     const badgeHTML = badgeContent != null
-      ? `<button class="queue-badge" title="Edit film" aria-label="Edit ${esc(film.title)}">${esc(String(badgeContent))}</button>`
+      ? `<span class="queue-badge" role="button" tabindex="0" title="Edit film" aria-label="Edit ${esc(film.title)}">${esc(String(badgeContent))}</span>`
       : '';
     const filmSeason = film.seasonId ? seasons.find(s => s.id === film.seasonId) : null;
     const seasonLabelHTML = filmSeason
@@ -587,18 +587,17 @@ function render() {
       ? `<img class="film-poster-img" src="${esc(film.posterUrl)}" alt="" loading="lazy">`
       : posterSVG(film.id);
     card.innerHTML = `
-      <a class="film-poster" href="${esc(filmExternalLink(film))}" target="_blank" rel="noopener noreferrer" title="View on TMDB">${posterHTML}${posterOverlayHTML}${seasonLabelHTML}</a>
+      <a class="film-poster" href="${esc(filmExternalLink(film))}" target="_blank" rel="noopener noreferrer" title="View on TMDB">${posterHTML}${posterOverlayHTML}${seasonLabelHTML}${badgeHTML}</a>
       <div class="film-info">
         <span class="film-title">${esc(film.title)}</span>
         <span class="film-year">${film.year}</span>
         ${genreHTML}
         ${metaHTML}
       </div>
-      ${badgeHTML}
       <button class="watch-toggle" aria-label="${toggleLabel}" title="${toggleLabel}">&#10003;</button>`;
 
     const badge = card.querySelector('.queue-badge');
-    if (badge) badge.addEventListener('click', e => { e.stopPropagation(); openModal(film); });
+    if (badge) badge.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); openModal(film); });
 
     card.querySelector('.watch-toggle').addEventListener('click', e => {
       e.stopPropagation();
