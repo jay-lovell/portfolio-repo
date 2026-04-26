@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="./flix.css" />
+  <title>PrescFlix</title>
+</head>
+<body>
+
+  <header class="flix-header">
+    <div class="flix-brand">
+      <a href="/presc/" class="flix-back" aria-label="Back to PRESC">&#8592;</a>
+      <div class="flix-logo-wrap">
+        <img src="../../images/presc.png" alt="PRESC logo" class="flix-logo" />
+      </div>
+      <span class="flix-wordmark">PRESC<span class="flix-accent">FLIX</span></span>
+    </div>
+    <p class="flix-tagline">Our film collection</p>
+    <nav class="flix-tabs" role="tablist" aria-label="Film lists">
+      <button class="flix-tab active" data-tab="queue" role="tab" aria-selected="true">Queue</button>
+      <button class="flix-tab" data-tab="watched" role="tab" aria-selected="false">Watched</button>
+    </nav>
+  </header>
+
+  <main class="flix-main">
+    <section class="film-section">
+      <div class="section-header">
+        <h2 class="section-title">Queue</h2>
+        <button class="sort-btn" id="sort-btn" aria-pressed="false" title="Sort by name">A–Z</button>
+        <select class="watched-sort-select" id="watched-sort" style="display:none" aria-label="Sort watched">
+          <option value="date">Date watched</option>
+          <option value="presc">PRESC Rating</option>
+          <option value="sarah">Sarah's Rating</option>
+          <option value="jay">Jay's Rating</option>
+        </select>
+        <span class="reorder-hint" id="reorder-hint">Drag to reorder</span>
+      </div>
+
+      <div class="filter-bar" id="filter-bar">
+        <div class="filter-row">
+          <span class="filter-label">Service</span>
+          <div class="filter-chips" id="filter-service" role="group" aria-label="Filter by service">
+            <button class="filter-chip active" data-filter="service" data-value="">All</button>
+            <button class="filter-chip" data-filter="service" data-value="Disney+"><img class="service-logo" src="https://www.google.com/s2/favicons?domain=disneyplus.com&sz=32" alt="" loading="lazy" onerror="this.remove()"> Disney+</button>
+            <button class="filter-chip" data-filter="service" data-value="BBC iPlayer"><img class="service-logo" src="https://www.google.com/s2/favicons?domain=bbc.co.uk&sz=32" alt="" loading="lazy" onerror="this.remove()"> iPlayer</button>
+            <button class="filter-chip" data-filter="service" data-value="Netflix"><img class="service-logo" src="https://www.google.com/s2/favicons?domain=netflix.com&sz=32" alt="" loading="lazy" onerror="this.remove()"> Netflix</button>
+            <button class="filter-chip" data-filter="service" data-value="NowTV"><img class="service-logo" src="https://www.google.com/s2/favicons?domain=nowtv.com&sz=32" alt="" loading="lazy" onerror="this.remove()"> NowTV</button>
+            <button class="filter-chip" data-filter="service" data-value="Paramount"><img class="service-logo" src="https://www.google.com/s2/favicons?domain=paramountplus.com&sz=32" alt="" loading="lazy" onerror="this.remove()"> Paramount</button>
+            <button class="filter-chip" data-filter="service" data-value="Amazon Prime"><img class="service-logo" src="https://www.google.com/s2/favicons?domain=primevideo.com&sz=32" alt="" loading="lazy" onerror="this.remove()"> Prime</button>
+            <button class="filter-chip" data-filter="service" data-value="DVD / Blu-ray">💿 DVD</button>
+            <button class="filter-chip" data-filter="service" data-value="Cinema">🎬 Cinema</button>
+            <button class="filter-chip" data-filter="service" data-value="Unknown">❓ Unknown</button>
+          </div>
+        </div>
+        <div class="filter-row">
+          <span class="filter-label">Added by</span>
+          <div class="filter-chips" id="filter-user" role="group" aria-label="Filter by added by">
+            <button class="filter-chip active" data-filter="user" data-value="">All</button>
+            <button class="filter-chip" data-filter="user" data-value="Sarah">Sarah</button>
+            <button class="filter-chip" data-filter="user" data-value="Jay">Jay</button>
+          </div>
+        </div>
+        <div class="filter-row">
+          <span class="filter-label">Season</span>
+          <select class="season-filter-select" id="filter-season" aria-label="Filter by season">
+            <option value="">All seasons</option>
+            <option value="none">No season</option>
+          </select>
+          <button class="manage-seasons-btn" id="manage-seasons-btn" title="Manage seasons" aria-label="Manage seasons">✏️</button>
+        </div>
+        <div class="filter-row" id="filter-genre-row" style="display:none">
+          <span class="filter-label">Genre</span>
+          <div class="filter-chips" id="filter-genre" role="group" aria-label="Filter by genre"></div>
+        </div>
+        <div class="filter-row" id="filter-watched-row" style="display:none">
+          <span class="filter-label">Filter</span>
+          <div class="filter-chips" id="filter-watched" role="group" aria-label="Filter watched films">
+            <button class="filter-chip active" data-filter="watched" data-value="">All</button>
+            <button class="filter-chip" data-filter="watched" data-value="top">Highest Rated</button>
+            <button class="filter-chip" data-filter="watched" data-value="controversial">Most Controversial</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="film-grid" id="film-grid" aria-label="Film collection"></div>
+    </section>
+  </main>
+
+  <!-- Add film FAB -->
+  <button class="add-fab" id="add-fab" aria-label="Add a film" title="Add a film">+</button>
+
+  <!-- Add film modal -->
+  <div class="modal-overlay" id="modal-overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Add a Film</h2>
+        <button class="modal-close" id="modal-close" aria-label="Close">&#x2715;</button>
+      </div>
+      <form class="add-film-form" id="add-film-form" autocomplete="off" novalidate>
+        <div class="form-title-group">
+          <label class="form-label">
+            Title
+            <input class="form-input" id="field-title" type="text" required placeholder="e.g. Dune" autocomplete="off">
+          </label>
+          <div class="tmdb-suggestions" id="tmdb-suggestions" role="listbox" hidden></div>
+        </div>
+        <label class="form-label">
+          Year
+          <input class="form-input" id="field-year" type="number" min="1888" max="2099" required placeholder="e.g. 2021">
+        </label>
+        <fieldset class="form-fieldset">
+          <legend class="form-legend">Added by</legend>
+          <div class="radio-group">
+            <label class="radio-label"><input type="radio" name="addedBy" value="Sarah"> Sarah</label>
+            <label class="radio-label"><input type="radio" name="addedBy" value="Jay"> Jay</label>
+          </div>
+        </fieldset>
+        <div class="form-label" id="field-services-label">
+          Service
+          <div class="service-multi-picker" id="field-services" role="group" aria-label="Select services"></div>
+        </div>
+        <label class="form-label">
+          Genre
+          <input class="form-input" id="field-genre" type="text" placeholder="e.g. Action" maxlength="30" autocomplete="off">
+        </label>
+        <label class="form-label">
+          Season
+          <select class="form-select" id="field-season">
+            <option value="">— None —</option>
+          </select>
+        </label>
+        <label class="form-label" id="new-season-label" style="display:none">
+          New season name
+          <input class="form-input" id="field-new-season" type="text" placeholder="e.g. Halloween 2024" autocomplete="off">
+        </label>
+        <label class="form-label" id="watched-date-label" style="display:none">
+          Watched on
+          <input class="form-input" id="field-watched-date" type="date">
+        </label>
+        <p class="form-error" id="form-error" role="alert" aria-live="polite"></p>
+        <button type="submit" class="form-submit">Add to Queue</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Rating modal -->
+  <div class="rating-overlay" id="rating-overlay" aria-hidden="true">
+    <div class="rating-modal" role="dialog" aria-modal="true" aria-labelledby="rating-title">
+      <h2 class="rating-title" id="rating-title">Rate this film</h2>
+      <p class="rating-film-name" id="rating-film-name"></p>
+      <div class="rating-row">
+        <span class="rating-person">Sarah</span>
+        <div class="star-picker" id="star-sarah" role="group" aria-label="Sarah's rating"></div>
+      </div>
+      <div class="rating-row">
+        <span class="rating-person">Jay</span>
+        <div class="star-picker" id="star-jay" role="group" aria-label="Jay's rating"></div>
+      </div>
+      <div class="rating-actions">
+        <button class="rating-skip" id="rating-skip">Skip</button>
+        <button class="rating-save" id="rating-save">Save Ratings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manage seasons modal -->
+  <div class="modal-overlay" id="seasons-overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="seasons-modal-title">
+      <div class="modal-header">
+        <h2 class="modal-title" id="seasons-modal-title">Manage Seasons</h2>
+        <button class="modal-close" id="seasons-overlay-close" aria-label="Close">&#x2715;</button>
+      </div>
+      <div class="seasons-list" id="seasons-list"></div>
+      <p class="seasons-empty" id="seasons-empty">No seasons yet.</p>
+    </div>
+  </div>
+
+  <script type="module" src="./flix.js"></script>
+</body>
+</html>
