@@ -1532,7 +1532,11 @@ function openNoteModal(film) {
   const overlay = document.getElementById('note-overlay');
   overlay.setAttribute('aria-hidden', 'false');
   overlay.classList.add('open');
-  document.getElementById('note-text').focus();
+  // Don't auto-focus on touch devices — it triggers the virtual keyboard
+  // immediately, before the user has had a chance to read the thread.
+  if (!window.matchMedia('(hover: none)').matches) {
+    document.getElementById('note-text').focus();
+  }
 }
 
 function closeNoteModal() {
