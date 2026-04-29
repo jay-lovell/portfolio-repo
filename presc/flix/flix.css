@@ -1368,6 +1368,10 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator {
   .film-card .delete-btn {
     display: none;
   }
+  /* Note delete buttons are hover-only on desktop; always show on touch */
+  .note-bubble__delete {
+    opacity: 0.5;
+  }
 }
 
 /* ── Filter toggle button (mobile only) ────────────────────────── */
@@ -1669,4 +1673,44 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator {
 .note-edit-btn:hover {
   background: rgba(95, 211, 185, 0.08);
   border-color: var(--accent);
+}
+
+/* ── Mobile optimisations ─────────────────────────────────── */
+@media (max-width: 480px) {
+  /* Notes modal: use the full bottom-sheet height so the thread
+     has room to breathe above the compose area */
+  .notes-modal {
+    max-height: 92dvh;
+  }
+
+  /* Guard against the thread collapsing to nothing when the
+     virtual keyboard is open; 60px is roughly two bubble rows */
+  .notes-thread {
+    min-height: 60px;
+  }
+
+  /* Larger send-button touch target (was 36 × 36 px) */
+  .notes-send-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Respect the iPhone home-indicator safe area at the bottom of
+     the bottom-sheet compose area */
+  .notes-compose {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  /* Rating modal: present as a bottom-sheet like all other modals */
+  .rating-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .rating-modal {
+    width: 100%;
+    max-width: none;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
 }
