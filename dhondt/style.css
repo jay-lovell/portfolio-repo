@@ -17,6 +17,7 @@
   --primary:     #005b54;
   --primary-h:   #00796e;
   --danger:      #e04040;
+  --effective:   #60d0f0;   /* adjusted / effective vote count */
 
   /* Party colours */
   --con: #0087DC;
@@ -63,7 +64,7 @@ html, body {
 /* ── App shell ──────────────────────────────────────────── */
 #app {
   position: relative;
-  width: 100%; height: 100vh;
+  width: 100%; height: 100vh; height: 100dvh;
 }
 
 /* ── Phases ─────────────────────────────────────────────── */
@@ -134,7 +135,7 @@ html, body {
   -webkit-backdrop-filter: blur(12px);
   width: 100%; max-width: 740px;
   /* Never taller than the viewport */
-  max-height: 92vh;
+  max-height: 92vh; max-height: 92dvh;
   display: flex; flex-direction: column;
   padding: 8px 12px;
   box-shadow: var(--shadow);
@@ -261,6 +262,30 @@ html, body {
   flex-shrink: 0;
 }
 
+/* Independents candidate count row (within party card) */
+.ind-cand-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 4px; padding-top: 4px;
+  border-top: 1px solid rgba(107, 114, 128, 0.3);
+}
+.ind-cand-label {
+  font-size: 9px; color: var(--muted); white-space: nowrap;
+}
+.ind-cand-input {
+  font-size: 13px; font-weight: 700; color: var(--ind);
+  background: transparent; border: none;
+  border-bottom: 1px solid rgba(107, 114, 128, 0.4);
+  width: 28px; text-align: center; outline: none;
+  -moz-appearance: textfield;
+}
+.ind-cand-input::-webkit-inner-spin-button,
+.ind-cand-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.ind-cand-input:focus {
+  border-bottom-color: var(--ind);
+  background: rgba(107, 114, 128, 0.12);
+  border-radius: 2px 2px 0 0;
+}
+
 /* ════════════════════════════════════════════════════════════
    PHASE 2 – CALCULATION
    ════════════════════════════════════════════════════════════ */
@@ -273,7 +298,7 @@ html, body {
   padding: 10px 16px;
   display: flex; flex-direction: column;
   /* Fill but never overflow the viewport */
-  max-height: 100vh; overflow: hidden;
+  max-height: 100vh; max-height: 100dvh; overflow: hidden;
 }
 .calc-wrapper h2 {
   font-size: 16px; color: var(--gold);
@@ -452,9 +477,18 @@ html, body {
   color: var(--gold); text-align: center; line-height: 1;
 }
 .bbox-adjusted  {
-  font-size: 10px; color: var(--muted); text-align: center; line-height: 1;
+  font-size: 12px; font-weight: 800;
+  color: var(--effective); text-align: center; line-height: 1;
 }
 .bbox-div-label { font-size: 8px; color: var(--muted); text-align: center; }
+.bbox-cap {
+  font-size: 8px; color: #6B7280;
+  background: rgba(107, 114, 128, 0.18);
+  border-radius: 3px; padding: 1px 5px;
+  text-align: center; line-height: 1.4;
+}
+/* In D'Hondt phase the boxes are smaller — match votes font-size */
+.dhondt-boxes-row .bbox-adjusted { font-size: 11px; }
 
 /* Bottom: message + button */
 .dhondt-bottom {
