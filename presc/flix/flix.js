@@ -115,9 +115,14 @@ const DEFAULT_FILMS = [
 ];
 
 // ── Persistence ────────────────────────────────────────────────────────────
+// Set to true once we confirm Firestore is reachable, so saveData never
+// overwrites the real document with DEFAULT_FILMS from a failed load.
+let safeToWrite = false;
+
 async function loadData() {
   try {
     const snap = await getDoc(DATA_DOC);
+    safeToWrite = true; // getDoc succeeded — safe to write regardless of what we found
     if (snap.exists()) {
       const data = snap.data();
       const savedFilms = Array.isArray(data.films) && data.films.length > 0
@@ -158,7 +163,33 @@ async function loadData() {
 }
 
 async function saveData() {
+  if (!safeToWrite) {
+    console.warn('PrescFlix: save blocked — initial Firestore load failed (prevents accidental overwrite)');
+    return;
+  }
   await setDoc(DATA_DOC, { films, seasons });
+}
+
+// Re-read Firestore notes for every film and merge any notes that exist on the
+// server but not locally. This prevents a stale browser session (e.g. the other
+// user's tab that was opened before new notes were added) from clobbering notes
+// on the next save. Called before every note add/delete.
+async function mergeServerNotes() {
+  try {
+    const snap = await getDoc(DATA_DOC);
+    if (!snap.exists()) return;
+    const serverFilms = snap.data().films || [];
+    const serverNoteMap = new Map(serverFilms.map(f => [f.id, f.notes || []]));
+    films = films.map(f => {
+      const serverNotes = serverNoteMap.get(f.id) || [];
+      const localNotes  = Array.isArray(f.notes) ? f.notes : [];
+      const localIds    = new Set(localNotes.map(n => n.id));
+      const extras      = serverNotes.filter(n => !localIds.has(n.id));
+      return extras.length ? { ...f, notes: [...localNotes, ...extras] } : f;
+    });
+  } catch {
+    // Non-fatal — proceed with local state if Firestore is unreachable
+  }
 }
 
 // ── Poster wireframe SVG ───────────────────────────────────────────────────
@@ -677,15 +708,33 @@ function render() {
 }
 
 // ── DnD helpers ────────────────────────────────────────────────────────────
-function syncFilms() {
+function syncFilms(draggedId) {
   if (sortByName) return; // sort is display-only; don't alter queue order
   const grid = document.getElementById('film-grid');
   const visibleIds = Array.from(grid.querySelectorAll('.film-card'))
     .map(c => Number(c.dataset.id));
-  // Preserve order of visible films; keep hidden-tab films at the end
-  const visible = visibleIds.map(id => films.find(f => f.id === id)).filter(Boolean);
-  const hidden  = films.filter(f => !visibleIds.includes(f.id));
-  films = [...visible, ...hidden];
+  // True insertion: remove the dragged film from its current position and insert it
+  // just before whichever film now follows it in the visible order. This means
+  // dragging film 28 before film 9 always makes it film 9 and shifts 9→10, etc.
+  const draggedFilm = films.find(f => f.id === Number(draggedId));
+  const withoutDragged = films.filter(f => f.id !== Number(draggedId));
+  const posInVisible = visibleIds.indexOf(Number(draggedId));
+  const nextVisibleId = posInVisible < visibleIds.length - 1
+    ? visibleIds[posInVisible + 1]
+    : null;
+  let insertIdx;
+  if (nextVisibleId !== null) {
+    insertIdx = withoutDragged.findIndex(f => f.id === nextVisibleId);
+  } else {
+    // Dragged film is last among visible — insert after the last visible film
+    const visibleSet = new Set(visibleIds);
+    let lastVisibleIdx = -1;
+    withoutDragged.forEach((f, i) => { if (visibleSet.has(f.id)) lastVisibleIdx = i; });
+    insertIdx = lastVisibleIdx + 1;
+  }
+  const result = [...withoutDragged];
+  result.splice(insertIdx, 0, draggedFilm);
+  films = result;
   saveData().catch(e => console.warn('PrescFlix: save failed', e));
   render();
 }
@@ -816,8 +865,9 @@ function attachGridDnD(grid) {
     placeholder = null;
     draggedCard.style.display = '';
     draggedCard.classList.remove('dragging');
-    syncFilms();
+    const _draggedId = draggedCard.dataset.id;
     draggedCard = null;
+    syncFilms(_draggedId);
     lastInsertIdx = -1;
   });
 }
@@ -907,7 +957,7 @@ function attachTouchDnD(card) {
       grid.insertBefore(card, touchPlaceholder);
       touchPlaceholder.remove();
       touchPlaceholder = null;
-      syncFilms();
+      syncFilms(card.dataset.id);
     }
   }
 
@@ -1506,8 +1556,11 @@ function renderNotesThread(film) {
     btn.addEventListener('click', async () => {
       if (!notePendingFilm) return;
       if (!window.confirm('Delete this note?')) return;
+      // Refresh from Firestore first so we don't wipe notes added by the other user.
+      await mergeServerNotes();
       const f = films.find(fi => fi.id === notePendingFilm.id);
       if (!f) return;
+      if (f) notePendingFilm = f;
       const removed = f.notes.find(n => n.id === btn.dataset.noteId);
       f.notes = (f.notes || []).filter(n => n.id !== btn.dataset.noteId);
       try {
@@ -1568,7 +1621,12 @@ document.getElementById('note-save').addEventListener('click', async () => {
   if (!text)   { errorEl.textContent = 'Please enter a note.';                    return; }
   if (!author) { errorEl.textContent = 'Please select who is leaving this note.'; return; }
   errorEl.textContent = '';
+  // Refresh notes from Firestore before writing so a stale session doesn't
+  // clobber notes added by the other user since this tab was last loaded.
+  await mergeServerNotes();
   const f = films.find(fi => fi.id === notePendingFilm.id);
+  // Keep notePendingFilm in sync with the (potentially refreshed) films entry
+  if (f) notePendingFilm = f;
   if (!f) return;
   if (!Array.isArray(f.notes)) f.notes = [];
   f.notes.push({ id: String(Date.now()), author, text, timestamp: new Date().toISOString() });
