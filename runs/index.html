@@ -180,7 +180,7 @@
         <label class="pace-label">Pace (min/km)</label>
         <div class="pace-inputs">
           <input class="pace-min" type="number" min="0" step="1" placeholder="min" />
-          <input class="pace-sec" type="number" min="0" max="59" step="1" placeholder="sec" />
+          <input class="pace-sec" type="number" min="0" step="1" placeholder="sec" />
         </div>
       </div>
 
@@ -235,9 +235,6 @@
         row.querySelector('.distance-label').textContent = getDistanceLabel();
         row.querySelector('.pace-label').textContent = getPaceLabel();
       });
-
-      totalDistanceEl.textContent = `0.00 ${distanceUnitEl.value}`;
-      totalTimeEl.textContent = '00:00:00';
     }
 
     function normalizePaceInputs(row) {
