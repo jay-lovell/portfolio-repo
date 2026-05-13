@@ -243,18 +243,21 @@
       const rawMinutes = Number(paceMinInput.value) || 0;
       const rawSeconds = Number(paceSecInput.value) || 0;
 
-      const carryMinutes = Math.floor(rawSeconds / 60);
-      const normalizedMinutes = rawMinutes + carryMinutes;
-      const normalizedSeconds = rawSeconds % 60;
-
       if (rawSeconds >= 60) {
+        const carryMinutes = Math.floor(rawSeconds / 60);
+        const normalizedMinutes = rawMinutes + carryMinutes;
+        const normalizedSeconds = rawSeconds % 60;
         paceMinInput.value = String(normalizedMinutes);
         paceSecInput.value = String(normalizedSeconds);
+        return {
+          minutes: normalizedMinutes,
+          seconds: normalizedSeconds
+        };
       }
 
       return {
-        minutes: normalizedMinutes,
-        seconds: normalizedSeconds
+        minutes: rawMinutes,
+        seconds: rawSeconds
       };
     }
 
@@ -287,8 +290,8 @@
     }
 
     function createRow() {
-      const fragment = rowTemplate.content.cloneNode(true);
-      const row = fragment.querySelector('.row');
+      const templateFragment = rowTemplate.content.cloneNode(true);
+      const row = templateFragment.querySelector('.row');
       row.querySelector('.distance-label').textContent = getDistanceLabel();
       row.querySelector('.pace-label').textContent = getPaceLabel();
 
@@ -307,7 +310,7 @@
         recalculate();
       });
 
-      rowsEl.appendChild(fragment);
+      rowsEl.appendChild(templateFragment);
     }
 
     addRowButton.addEventListener('click', () => {
