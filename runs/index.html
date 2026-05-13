@@ -240,6 +240,33 @@
       totalTimeEl.textContent = '00:00:00';
     }
 
+    function normalizePaceInputs(row) {
+      const paceMinInput = row.querySelector('.pace-min');
+      const paceSecInput = row.querySelector('.pace-sec');
+      const rawMinutes = Number(paceMinInput.value) || 0;
+      const rawSeconds = Number(paceSecInput.value) || 0;
+
+      const carryMinutes = Math.floor(rawSeconds / 60);
+      const normalizedMinutes = rawMinutes + carryMinutes;
+      const normalizedSeconds = rawSeconds % 60;
+
+      if (rawSeconds >= 60) {
+        paceMinInput.value = String(normalizedMinutes);
+        paceSecInput.value = String(normalizedSeconds);
+      }
+
+      return {
+        minutes: normalizedMinutes,
+        seconds: normalizedSeconds
+      };
+    }
+
+    function clearNumericInputs(row) {
+      row.querySelectorAll('input[type="number"]').forEach((input) => {
+        input.value = '';
+      });
+    }
+
     function recalculate() {
       const rows = rowsEl.querySelectorAll('.row');
       let totalDistance = 0;
@@ -247,8 +274,7 @@
 
       rows.forEach((row) => {
         const distance = Number(row.querySelector('.distance').value) || 0;
-        const paceMin = Number(row.querySelector('.pace-min').value) || 0;
-        const paceSec = Number(row.querySelector('.pace-sec').value) || 0;
+        const { minutes: paceMin, seconds: paceSec } = normalizePaceInputs(row);
 
         const paceInSeconds = (paceMin * 60) + paceSec;
         const distanceInPaceUnit = convertDistanceForPace(distance, distanceUnitEl.value, paceUnitEl.value);
@@ -275,9 +301,7 @@
 
       row.querySelector('.remove-row').addEventListener('click', () => {
         if (rowsEl.querySelectorAll('.row').length === 1) {
-          row.querySelector('.distance').value = '';
-          row.querySelector('.pace-min').value = '';
-          row.querySelector('.pace-sec').value = '';
+          clearNumericInputs(row);
           recalculate();
           return;
         }
