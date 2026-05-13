@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Running Calculator</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #2f81f7;
+      --border: #30363d;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .calculator {
+      width: min(900px, 100%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      font-size: 1.5rem;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    select,
+    input,
+    button {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: #0d1117;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 10px;
+      font: inherit;
+    }
+
+    .rows {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr auto;
+      gap: 10px;
+      align-items: end;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(13, 17, 23, 0.6);
+    }
+
+    .pace-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .row button {
+      width: auto;
+      padding-inline: 12px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .primary {
+      background: var(--accent);
+      border-color: transparent;
+      color: white;
+      cursor: pointer;
+    }
+
+    .secondary {
+      cursor: pointer;
+    }
+
+    .result {
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .result strong {
+      font-size: 1.15rem;
+    }
+
+    @media (max-width: 700px) {
+      .row {
+        grid-template-columns: 1fr;
+      }
+
+      .row button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="calculator" aria-label="Running calculator">
+    <h1>Running Calculator</h1>
+
+    <section class="controls">
+      <div>
+        <label for="distance-unit">Distance Unit</label>
+        <select id="distance-unit">
+          <option value="km" selected>Kilometers (km)</option>
+          <option value="mi">Miles (mi)</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="pace-unit">Pace Unit</label>
+        <select id="pace-unit">
+          <option value="km" selected>Minutes per Kilometer (min/km)</option>
+          <option value="mi">Minutes per Mile (min/mi)</option>
+        </select>
+      </div>
+    </section>
+
+    <section id="rows" class="rows" aria-label="Distance and pace rows"></section>
+
+    <section class="actions">
+      <button id="add-row" class="secondary" type="button">Add Another Row</button>
+      <button id="calculate" class="primary" type="button">Calculate Total</button>
+    </section>
+
+    <section class="result" aria-live="polite">
+      <div>Total Distance: <strong id="total-distance">0.00 km</strong></div>
+      <div>Total Time: <strong id="total-time">00:00:00</strong></div>
+    </section>
+  </main>
+
+  <template id="row-template">
+    <article class="row">
+      <div>
+        <label class="distance-label">Distance (km)</label>
+        <input class="distance" type="number" min="0" step="0.01" placeholder="e.g. 5" />
+      </div>
+
+      <div>
+        <label class="pace-label">Pace (min/km)</label>
+        <div class="pace-inputs">
+          <input class="pace-min" type="number" min="0" step="1" placeholder="min" />
+          <input class="pace-sec" type="number" min="0" step="1" placeholder="sec" />
+        </div>
+      </div>
+
+      <div>
+        <label>Row Time</label>
+        <input class="row-time" type="text" value="00:00:00" readonly />
+      </div>
+
+      <button class="remove-row secondary" type="button">Remove</button>
+    </article>
+  </template>
+
+  <script>
+    const KM_PER_MILE = 1.609344;
+
+    const rowsEl = document.getElementById('rows');
+    const rowTemplate = document.getElementById('row-template');
+    const distanceUnitEl = document.getElementById('distance-unit');
+    const paceUnitEl = document.getElementById('pace-unit');
+    const totalDistanceEl = document.getElementById('total-distance');
+    const totalTimeEl = document.getElementById('total-time');
+    const addRowButton = document.getElementById('add-row');
+    const calculateButton = document.getElementById('calculate');
+
+    function formatDuration(totalSeconds) {
+      const safeSeconds = Math.max(0, Math.round(totalSeconds));
+      const hours = Math.floor(safeSeconds / 3600);
+      const minutes = Math.floor((safeSeconds % 3600) / 60);
+      const seconds = safeSeconds % 60;
+
+      return [hours, minutes, seconds]
+        .map((value) => String(value).padStart(2, '0'))
+        .join(':');
+    }
+
+    function convertDistanceForPace(distance, distanceUnit, paceUnit) {
+      if (distanceUnit === paceUnit) return distance;
+      if (distanceUnit === 'km' && paceUnit === 'mi') return distance / KM_PER_MILE;
+      return distance * KM_PER_MILE;
+    }
+
+    function getDistanceLabel() {
+      return distanceUnitEl.value === 'km' ? 'Distance (km)' : 'Distance (mi)';
+    }
+
+    function getPaceLabel() {
+      return paceUnitEl.value === 'km' ? 'Pace (min/km)' : 'Pace (min/mi)';
+    }
+
+    function updateRowLabels() {
+      rowsEl.querySelectorAll('.row').forEach((row) => {
+        row.querySelector('.distance-label').textContent = getDistanceLabel();
+        row.querySelector('.pace-label').textContent = getPaceLabel();
+      });
+    }
+
+    function normalizePaceInputs(row) {
+      const paceMinInput = row.querySelector('.pace-min');
+      const paceSecInput = row.querySelector('.pace-sec');
+      const rawMinutes = Number(paceMinInput.value) || 0;
+      const rawSeconds = Number(paceSecInput.value) || 0;
+
+      if (rawSeconds >= 60) {
+        const carryMinutes = Math.floor(rawSeconds / 60);
+        const normalizedMinutes = rawMinutes + carryMinutes;
+        const normalizedSeconds = rawSeconds % 60;
+        paceMinInput.value = String(normalizedMinutes);
+        paceSecInput.value = String(normalizedSeconds);
+        return {
+          minutes: normalizedMinutes,
+          seconds: normalizedSeconds
+        };
+      }
+
+      return {
+        minutes: rawMinutes,
+        seconds: rawSeconds
+      };
+    }
+
+    function clearNumericInputs(row) {
+      row.querySelectorAll('input[type="number"]').forEach((input) => {
+        input.value = '';
+      });
+    }
+
+    function recalculate() {
+      const rows = rowsEl.querySelectorAll('.row');
+      let totalDistance = 0;
+      let totalSeconds = 0;
+
+      rows.forEach((row) => {
+        const distance = Number(row.querySelector('.distance').value) || 0;
+        const { minutes: paceMin, seconds: paceSec } = normalizePaceInputs(row);
+
+        const paceInSeconds = (paceMin * 60) + paceSec;
+        const distanceInPaceUnit = convertDistanceForPace(distance, distanceUnitEl.value, paceUnitEl.value);
+        const rowSeconds = distanceInPaceUnit * paceInSeconds;
+
+        totalDistance += distance;
+        totalSeconds += rowSeconds;
+        row.querySelector('.row-time').value = formatDuration(rowSeconds);
+      });
+
+      totalDistanceEl.textContent = `${totalDistance.toFixed(2)} ${distanceUnitEl.value}`;
+      totalTimeEl.textContent = formatDuration(totalSeconds);
+    }
+
+    function createRow() {
+      const templateFragment = rowTemplate.content.cloneNode(true);
+      const row = templateFragment.querySelector('.row');
+      row.querySelector('.distance-label').textContent = getDistanceLabel();
+      row.querySelector('.pace-label').textContent = getPaceLabel();
+
+      row.querySelectorAll('input').forEach((input) => {
+        input.addEventListener('input', recalculate);
+      });
+
+      row.querySelector('.remove-row').addEventListener('click', () => {
+        if (rowsEl.querySelectorAll('.row').length === 1) {
+          clearNumericInputs(row);
+          recalculate();
+          return;
+        }
+
+        row.remove();
+        recalculate();
+      });
+
+      rowsEl.appendChild(templateFragment);
+    }
+
+    addRowButton.addEventListener('click', () => {
+      createRow();
+      recalculate();
+    });
+
+    calculateButton.addEventListener('click', recalculate);
+    distanceUnitEl.addEventListener('change', () => {
+      updateRowLabels();
+      recalculate();
+    });
+    paceUnitEl.addEventListener('change', () => {
+      updateRowLabels();
+      recalculate();
+    });
+
+    createRow();
+    recalculate();
+  </script>
+</body>
+</html>
