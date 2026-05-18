@@ -37,6 +37,25 @@
       letter-spacing: 0.06em;
       margin: 0 0 10px;
     }
+    .chart-section {
+      margin-bottom: 20px;
+    }
+    @media (max-width: 480px) {
+      .chart-section {
+        margin-bottom: 12px;
+      }
+      .chart-label {
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        margin-bottom: 8px;
+      }
+      #this-week-winner p:last-child {
+        font-size: 1.3rem !important;
+      }
+      #this-week-winner p:first-child {
+        font-size: 0.75rem !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -50,11 +69,11 @@
       <p class="intro">Weekly progress and competition results.</p>
     </section>
 
-    <div id="leaderboard-container" class="result-box" style="margin-bottom:20px"></div>
+    <div id="leaderboard-container" class="result-box chart-section"></div>
 
-    <div id="this-week-winner" class="result-box" style="margin-bottom:20px;text-align:center"></div>
+    <div id="this-week-winner" class="result-box chart-section" style="text-align:center"></div>
 
-    <div id="weekly-chart-container" class="result-box" style="margin-bottom:20px">
+    <div id="weekly-chart-container" class="result-box chart-section">
       <p class="chart-label">Weekly % of start weight lost</p>
       <canvas id="weeklyChart"></canvas>
     </div>

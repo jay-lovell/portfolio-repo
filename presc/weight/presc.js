@@ -5,8 +5,8 @@
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
 import {
-  getFirestore, collection, addDoc, getDocs, deleteDoc,
-  query, where, orderBy
+  getFirestore, collection, getDocs, deleteDoc,
+  doc, setDoc, query, where, orderBy
 } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
 /* ── Firebase bootstrap ─────────────────────────────── */
@@ -53,7 +53,9 @@ export function fmtDate(isoStr) {
 /* ── Firestore helpers ──────────────────────────────── */
 
 export async function saveWeight(user, startKg, todayKg, changePct, date) {
-  await addDoc(collection(db, 'weightData'), {
+  const dateKey = date.slice(0, 10); // YYYY-MM-DD
+  const docId   = `${user}_${dateKey}`;
+  await setDoc(doc(db, 'weightData', docId), {
     user, date, startWeight: startKg, todayWeight: todayKg, changePct
   });
 }
@@ -163,21 +165,27 @@ export function renderChart(canvasId, data, containerEl) {
 
   if (chartInstance) chartInstance.destroy();
 
+  const isMobile = window.innerWidth <= 480;
+
   chartInstance = new Chart(ctx, {
     type: 'line',
     data: { labels, datasets },
     options: {
       responsive: true,
+      aspectRatio: isMobile ? 1.2 : 2,
       plugins: {
-        legend: { position: 'top' },
+        legend: { position: 'top', labels: { boxWidth: isMobile ? 10 : 14, font: { size: isMobile ? 11 : 12 } } },
         tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y}%` } }
       },
       scales: {
-        x: { title: { display: true, text: 'Week' } },
+        x: {
+          title: { display: !isMobile, text: 'Week' },
+          ticks: { font: { size: isMobile ? 10 : 12 }, maxRotation: isMobile ? 45 : 0, autoSkip: true, maxTicksLimit: isMobile ? 6 : 12 }
+        },
         y: {
           beginAtZero: false, suggestedMin: 90, suggestedMax: 105,
-          title: { display: true, text: 'Relative Weight (%)' },
-          ticks: { callback: v => `${v}%` }
+          title: { display: !isMobile, text: 'Relative Weight (%)' },
+          ticks: { callback: v => `${v}%`, font: { size: isMobile ? 10 : 12 } }
         }
       }
     }
@@ -230,6 +238,45 @@ export function renderWeeklyBarChart(canvasId, results) {
   const completedWeeks = results.filter(r => r.missing.length === 0);
   const labels = completedWeeks.map(r => fmtDate(r.week));
 
+  // Custom plugin: draw alternating background bands per week
+  const bandPlugin = {
+    id: 'bandPlugin',
+    beforeDraw(chart) {
+      const { ctx, chartArea: { top, bottom, left, right }, scales: { x } } = chart;
+      const count = completedWeeks.length;
+      if (!count) return;
+      const bandWidth = (right - left) / count;
+      ctx.save();
+      completedWeeks.forEach((_, i) => {
+        if (i % 2 === 0) return; // skip even bands (leave transparent)
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        ctx.fillRect(left + i * bandWidth, top, bandWidth, bottom - top);
+      });
+      ctx.restore();
+    }
+  };
+
+  // Custom plugin: draw a flat line for bars with 0 change (no weight change that week)
+  const flatLinePlugin = {
+    id: 'flatLinePlugin',
+    afterDraw(chart) {
+      const c = chart.ctx;
+      const yZero = chart.scales.y.getPixelForValue(0);
+      chart.data.datasets.forEach((dataset, datasetIndex) => {
+        const meta = chart.getDatasetMeta(datasetIndex);
+        meta.data.forEach((bar, dataIndex) => {
+          if (dataset.data[dataIndex] === 0) {
+            const barWidth = bar.width ?? 20;
+            c.save();
+            c.fillStyle = dataset.borderColor;
+            c.fillRect(bar.x - barWidth / 2, yZero - 2, barWidth, 3);
+            c.restore();
+          }
+        });
+      });
+    }
+  };
+
   // Custom plugin: draw a crown emoji above the winning bar each week
   const crownPlugin = {
     id: 'crownPlugin',
@@ -254,6 +301,8 @@ export function renderWeeklyBarChart(canvasId, results) {
 
   if (weeklyChartInstance) weeklyChartInstance.destroy();
 
+  const isMobile = window.innerWidth <= 480;
+
   weeklyChartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -268,14 +317,17 @@ export function renderWeeklyBarChart(canvasId, results) {
         backgroundColor: COLORS[u] + 'aa',
         borderColor:     COLORS[u],
         borderWidth:     2,
-        borderRadius:    6,
+        borderRadius:    isMobile ? 4 : 6,
+        categoryPercentage: 0.65,
+        barPercentage:      0.9,
       }))
     },
     options: {
       responsive: true,
+      aspectRatio: isMobile ? 1.2 : 2,
       layout: { padding: { top: 24 } },
       plugins: {
-        legend: { position: 'top' },
+        legend: { position: 'top', labels: { boxWidth: isMobile ? 10 : 14, font: { size: isMobile ? 11 : 12 } } },
         tooltip: {
           callbacks: {
             label: c => `${c.dataset.label}: ${c.parsed.y.toFixed(2)}% of start weight lost`
@@ -283,14 +335,17 @@ export function renderWeeklyBarChart(canvasId, results) {
         }
       },
       scales: {
-        x: { title: { display: true, text: 'Week of' } },
+        x: {
+          title: { display: !isMobile, text: 'Week of' },
+          ticks: { font: { size: isMobile ? 10 : 12 }, maxRotation: isMobile ? 45 : 0, autoSkip: true, maxTicksLimit: isMobile ? 6 : 12 }
+        },
         y: {
-          title: { display: true, text: '% of Start Weight Lost' },
-          ticks: { callback: v => `${v}%` }
+          title: { display: !isMobile, text: '% of Start Weight Lost' },
+          ticks: { callback: v => `${v}%`, font: { size: isMobile ? 10 : 12 } }
         }
       }
     },
-    plugins: [crownPlugin]
+    plugins: [bandPlugin, flatLinePlugin, crownPlugin]
   });
 }
 

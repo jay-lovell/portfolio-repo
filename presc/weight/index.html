@@ -30,8 +30,8 @@
     </div>
 
     <div class="unit-switcher">
-      <label for="measurement-date">Measurement Date</label>
-      <input id="measurement-date" type="date" />
+      <label for="measurement-date">Week Commencing</label>
+      <input id="measurement-date" type="date" min="2025-01-06" step="7" />
     </div>
 
     <div class="unit-switcher">
@@ -90,8 +90,17 @@
   <script type="module">
     import {
       db, loadStartingWeight, loadWeightData, saveWeight,
-      renderChart, parseWeightInputs, todayISO
+      renderChart, parseWeightInputs
     } from './presc.js';
+
+    function currentWeekMonday() {
+      const today = new Date();
+      const day = today.getDay();              // 0 = Sun … 6 = Sat
+      const offset = day === 0 ? -6 : 1 - day; // roll back to Monday
+      const mon = new Date(today);
+      mon.setDate(today.getDate() + offset);
+      return mon.toLocaleDateString('en-CA');  // YYYY-MM-DD
+    }
 
     const weightUnit       = document.getElementById('weight-unit');
     const userSelect       = document.getElementById('user-select');
@@ -101,7 +110,17 @@
     const chartContainer   = document.getElementById('chart-container');
     let startingWeightKg   = null;
 
-    measurementDate.value = todayISO();
+    measurementDate.value = currentWeekMonday();
+
+    measurementDate.addEventListener('change', () => {
+      if (!measurementDate.value) return;
+      const d = new Date(measurementDate.value + 'T00:00:00');
+      const day = d.getDay();
+      if (day !== 1) {
+        d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+        measurementDate.value = d.toLocaleDateString('en-CA');
+      }
+    });
 
     userSelect.addEventListener('change', async () => {
       startingWeightKg = await loadStartingWeight(userSelect.value);
@@ -136,21 +155,24 @@
       chartContainer.hidden = true;
     }
 
-    document.getElementById('calculate-btn').addEventListener('click', async () => {
+    const calcBtn = document.getElementById('calculate-btn');
+    calcBtn.addEventListener('click', async () => {
+      if (calcBtn.disabled) return;
+      calcBtn.disabled = true;
       const user = userSelect.value;
-      if (!user)  return showError('Please select a user.');
-      if (!weightUnit.value) return showError('Please select input units.');
+      if (!user)  { calcBtn.disabled = false; return showError('Please select a user.'); }
+      if (!weightUnit.value) { calcBtn.disabled = false; return showError('Please select input units.'); }
 
       if (!startingWeightKg || startingWeightKg <= 0) {
         startingWeightKg = await loadStartingWeight(user);
       }
-      if (!startingWeightKg || startingWeightKg <= 0) return showError('No starting weight set. Go to Setup first.');
+      if (!startingWeightKg || startingWeightKg <= 0) { calcBtn.disabled = false; return showError('No starting weight set. Go to Setup first.'); }
 
       const todayKg = parseWeightInputs(weightUnit.value, {
         stones: 'today-stones', pounds: 'today-pounds',
         poundsOnly: 'today-pounds-only', kg: 'today-kilograms'
       });
-      if (!todayKg || todayKg <= 0) return showError('Enter a valid current weight.');
+      if (!todayKg || todayKg <= 0) { calcBtn.disabled = false; return showError('Enter a valid current weight.'); }
 
       const changePct = ((todayKg - startingWeightKg) / startingWeightKg) * 100;
       const formatted = Math.abs(changePct).toFixed(1);
@@ -173,6 +195,7 @@
       } else {
         chartContainer.hidden = true;
       }
+      calcBtn.disabled = false;
     });
   </script>
 </body>

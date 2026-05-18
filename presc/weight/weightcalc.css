@@ -228,4 +228,43 @@ select {
   .row.columns-2 {
     grid-template-columns: 1fr;
   }
+
+  body {
+    padding: 12px;
+    align-items: flex-start;
+  }
+
+  .page-shell {
+    border-radius: 20px;
+    padding: 16px;
+    width: 100%;
+  }
+
+  .brand-bar h1 {
+    font-size: 1.2rem;
+  }
+
+  .brand-logo-wrap {
+    width: 52px;
+    height: 52px;
+  }
+
+  .result-box {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .leaderboard-table th,
+  .leaderboard-table td {
+    padding: 8px 10px;
+    font-size: 0.88rem;
+  }
+
+  .leaderboard-table thead th {
+    font-size: 0.75rem;
+  }
+
+  .result-value {
+    font-size: 1.25rem;
+  }
 }
