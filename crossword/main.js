@@ -4,8 +4,6 @@ import {
   collection,
   getDocs,
   getFirestore,
-  orderBy,
-  query,
   serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 
@@ -46,12 +44,12 @@ function updateCountPreview() {
 
 function setFormMessage(message, isError = false) {
   formMessage.textContent = message;
-  formMessage.style.color = isError ? '#ff8f8f' : '';
+  formMessage.style.color = isError ? '#c0392b' : '';
 }
 
 function setListStatus(message, isError = false) {
   listStatus.textContent = message;
-  listStatus.style.color = isError ? '#ff8f8f' : '';
+  listStatus.style.color = isError ? '#c0392b' : '';
 }
 
 function sortByLengthThenClue(list) {
@@ -157,7 +155,7 @@ function renderClues() {
 async function loadEntries() {
   setListStatus('Loading clues...');
   try {
-    const snapshot = await getDocs(query(cluesRef, orderBy('letterCount'), orderBy('clue')));
+    const snapshot = await getDocs(cluesRef);
     entries = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
@@ -165,7 +163,8 @@ async function loadEntries() {
     rebuildLengthFilter();
     renderPatternBoxes();
     renderClues();
-  } catch {
+  } catch (error) {
+    console.error('Firestore load error:', error);
     setListStatus('Could not load clues right now.', true);
   }
 }
@@ -196,7 +195,8 @@ entryForm.addEventListener('submit', async event => {
     updateCountPreview();
     setFormMessage('Entry saved.');
     await loadEntries();
-  } catch {
+  } catch (error) {
+    console.error('Firestore save error:', error);
     setFormMessage('Could not save entry right now.', true);
   }
 });
