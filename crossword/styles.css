@@ -215,6 +215,13 @@ button:hover {
   z-index: 1;
 }
 
+.word-gap {
+  width: 14px;
+  min-height: 46px;
+  border-bottom: 2px dotted var(--border-light);
+  align-self: center;
+}
+
 .clue-list {
   display: grid;
   gap: 14px;
@@ -272,6 +279,7 @@ button:hover {
   white-space: nowrap;
   font-size: 0.9rem;
   font-weight: 600;
+  font-family: 'Libre Baskerville', Georgia, serif;
 }
 
 .entry-actions {
@@ -360,5 +368,9 @@ button:hover {
     width: 48px;
     height: 48px;
     font-size: 1.25rem;
+  }
+
+  .word-gap {
+    min-height: 48px;
   }
 }

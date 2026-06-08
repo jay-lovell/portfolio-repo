@@ -22,9 +22,9 @@
     <section class="panel">
       <h2>Filter grid</h2>
       <div class="filter-row">
-        <label for="length-filter">Letter count</label>
+        <label for="length-filter">Answer pattern</label>
         <select id="length-filter">
-          <option value="all">All lengths</option>
+          <option value="all">All answers</option>
         </select>
       </div>
 
@@ -35,7 +35,7 @@
 
       <div>
         <p class="pattern-label">Grid letters</p>
-        <p class="helper-text">Type continuously. Use space for any letter in that position.</p>
+        <p class="helper-text">Type letters continuously. Wider gaps show word breaks for multi-word answers.</p>
         <div id="pattern-boxes" class="pattern-boxes" aria-label="Crossword letter filter boxes"></div>
       </div>
       <output id="list-status" class="message" aria-live="polite"></output>
