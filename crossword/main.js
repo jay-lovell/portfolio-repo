@@ -60,14 +60,95 @@ function consumeFlashMessage() {
   }
 }
 
-function normalizeAnswer(rawValue) {
-  return rawValue.toUpperCase().replace(/[^A-Z]/g, '');
+function parsePatternSegments(patternValue) {
+  const raw = String(patternValue || '').trim();
+  if (!raw) return [];
+  const segments = raw
+    .split(',')
+    .map(segment => Number(segment.trim()))
+    .filter(segment => Number.isInteger(segment) && segment > 0);
+  return segments;
+}
+
+function patternFromSegments(segments) {
+  return segments.join(',');
+}
+
+function totalFromSegments(segments) {
+  return segments.reduce((total, segment) => total + segment, 0);
+}
+
+function breakpointsFromSegments(segments) {
+  let running = 0;
+  return segments.slice(0, -1).map(segment => {
+    running += segment;
+    return running;
+  });
+}
+
+function formatAnswerWithSegments(answer, segments) {
+  if (!answer) return '';
+  if (!segments.length) return answer;
+  if (totalFromSegments(segments) !== answer.length) return answer;
+
+  let cursor = 0;
+  const words = segments.map(segment => {
+    const word = answer.slice(cursor, cursor + segment);
+    cursor += segment;
+    return word;
+  });
+  return words.join(' ');
+}
+
+function parseAnswerInput(rawValue) {
+  const words = String(rawValue)
+    .toUpperCase()
+    .match(/[A-Z]+/g) || [];
+
+  const answer = words.join('');
+  const segments = words.map(word => word.length);
+  const answerPattern = patternFromSegments(segments);
+
+  return {
+    answer,
+    letterCount: answer.length,
+    answerPattern,
+    segments,
+    answerDisplay: words.join(' '),
+  };
+}
+
+function normalizeEntry(rawEntry) {
+  const answer = String(rawEntry.answer || '').toUpperCase().replace(/[^A-Z]/g, '');
+  const fallbackCount = Number(rawEntry.letterCount) || answer.length;
+  let segments = parsePatternSegments(rawEntry.answerPattern);
+  if (!segments.length && fallbackCount > 0) segments = [fallbackCount];
+  if (segments.length && totalFromSegments(segments) !== answer.length && answer.length) {
+    segments = [answer.length];
+  }
+
+  const answerPattern = segments.length ? patternFromSegments(segments) : String(answer.length);
+  const letterCount = answer.length;
+
+  return {
+    ...rawEntry,
+    answer,
+    letterCount,
+    answerPattern,
+    answerDisplay: formatAnswerWithSegments(answer, segments),
+    breakpoints: breakpointsFromSegments(segments),
+  };
 }
 
 function updateCountPreview() {
   if (!answerInput || !letterCountOutput) return;
-  const normalized = normalizeAnswer(answerInput.value);
-  letterCountOutput.value = String(normalized.length);
+  const parsed = parseAnswerInput(answerInput.value);
+  if (!parsed.answer) {
+    letterCountOutput.value = '0';
+    return;
+  }
+  const patternText = parsed.answerPattern.includes(',') ? ` (${parsed.answerPattern})` : '';
+  letterCountOutput.value = `${parsed.letterCount}${patternText}`;
 }
 
 function setFormMessage(message, isError = false) {
@@ -91,6 +172,7 @@ function setActionMessage(message, isError = false) {
 function sortByLengthThenClue(list) {
   return [...list].sort((a, b) => {
     if (a.letterCount !== b.letterCount) return a.letterCount - b.letterCount;
+    if (a.answerPattern !== b.answerPattern) return a.answerPattern.localeCompare(b.answerPattern);
     return a.clue.localeCompare(b.clue);
   });
 }
@@ -106,15 +188,26 @@ function escapeAttribute(value) {
 function rebuildLengthFilter() {
   if (!lengthFilter) return;
   const current = lengthFilter.value;
-  const lengths = [...new Set(entries.map(entry => entry.letterCount))].sort((a, b) => a - b);
-  lengthFilter.innerHTML = '<option value="all">All lengths</option>';
-  lengths.forEach(length => {
+  const patterns = [...new Set(entries.map(entry => entry.answerPattern))].sort((a, b) => {
+    const aSegments = parsePatternSegments(a);
+    const bSegments = parsePatternSegments(b);
+    const totalDiff = totalFromSegments(aSegments) - totalFromSegments(bSegments);
+    if (totalDiff !== 0) return totalDiff;
+    if (aSegments.length !== bSegments.length) return aSegments.length - bSegments.length;
+    return a.localeCompare(b);
+  });
+
+  lengthFilter.innerHTML = '<option value="all">All answers</option>';
+  patterns.forEach(pattern => {
+    const segments = parsePatternSegments(pattern);
+    const total = totalFromSegments(segments);
     const option = document.createElement('option');
-    option.value = String(length);
-    option.textContent = `${length} letters`;
+    option.value = pattern;
+    option.textContent = pattern.includes(',') ? `${total} letters (${pattern})` : `${total} letters`;
     lengthFilter.append(option);
   });
-  if (current !== 'all' && lengths.includes(Number(current))) {
+
+  if (current !== 'all' && patterns.includes(current)) {
     lengthFilter.value = current;
   }
 }
@@ -138,8 +231,10 @@ function focusPatternIndex(index) {
 function renderPatternBoxes() {
   if (!patternBoxes || !lengthFilter) return;
   patternBoxes.innerHTML = '';
-  const selectedLength = Number(lengthFilter.value);
-  if (!Number.isInteger(selectedLength) || selectedLength <= 0) {
+  const segments = parsePatternSegments(lengthFilter.value);
+  const selectedLength = totalFromSegments(segments);
+
+  if (!selectedLength) {
     knownLetters = [];
     return;
   }
@@ -147,6 +242,7 @@ function renderPatternBoxes() {
   if (knownLetters.length !== selectedLength) {
     knownLetters = Array.from({ length: selectedLength }, (_, index) => knownLetters[index] || '');
   }
+  const breakpoints = breakpointsFromSegments(segments);
 
   knownLetters.forEach((letter, index) => {
     const input = document.createElement('input');
@@ -156,7 +252,7 @@ function renderPatternBoxes() {
     input.autocomplete = 'off';
     input.dataset.index = String(index);
     input.value = letter;
-    input.setAttribute('aria-label', `Letter ${index + 1}`);
+    input.setAttribute('aria-label', `Letter ${index + 1} of ${knownLetters.length}`);
 
     input.addEventListener('input', () => {
       const token = tokenFromInputValue(input.value);
@@ -198,15 +294,21 @@ function renderPatternBoxes() {
     });
 
     patternBoxes.append(input);
+    if (segments.length > 1 && breakpoints.includes(index + 1)) {
+      const gap = document.createElement('span');
+      gap.className = 'word-gap';
+      gap.setAttribute('aria-hidden', 'true');
+      patternBoxes.append(gap);
+    }
   });
 }
 
 function getFilteredEntries() {
-  const selectedLength = Number(lengthFilter?.value);
+  const selectedPattern = lengthFilter?.value || 'all';
   const searchValue = clueSearch?.value.trim().toLowerCase() || '';
 
   return entries.filter(entry => {
-    if (Number.isInteger(selectedLength) && selectedLength > 0 && entry.letterCount !== selectedLength) {
+    if (selectedPattern !== 'all' && entry.answerPattern !== selectedPattern) {
       return false;
     }
 
@@ -236,17 +338,25 @@ function renderClues() {
 
   const grouped = new Map();
   filtered.forEach(entry => {
-    if (!grouped.has(entry.letterCount)) grouped.set(entry.letterCount, []);
-    grouped.get(entry.letterCount).push(entry);
+    if (!grouped.has(entry.answerPattern)) grouped.set(entry.answerPattern, []);
+    grouped.get(entry.answerPattern).push(entry);
   });
 
-  [...grouped.keys()].sort((a, b) => a - b).forEach(length => {
+  [...grouped.keys()].sort((a, b) => {
+    const aSegments = parsePatternSegments(a);
+    const bSegments = parsePatternSegments(b);
+    const totalDiff = totalFromSegments(aSegments) - totalFromSegments(bSegments);
+    if (totalDiff !== 0) return totalDiff;
+    if (aSegments.length !== bSegments.length) return aSegments.length - bSegments.length;
+    return a.localeCompare(b);
+  }).forEach(pattern => {
     const section = document.createElement('section');
     section.className = 'group';
-    section.innerHTML = `<h3>${length} letters</h3>`;
+    const patternLength = totalFromSegments(parsePatternSegments(pattern));
+    section.innerHTML = `<h3>${pattern.includes(',') ? `${patternLength} letters (${pattern})` : `${patternLength} letters`}</h3>`;
     const list = document.createElement('ul');
 
-    grouped.get(length).forEach(entry => {
+    grouped.get(pattern).forEach(entry => {
       const item = document.createElement('li');
       item.dataset.entryId = entry.id;
 
@@ -257,7 +367,7 @@ function renderClues() {
             <label for="edit-clue-${entry.id}">Clue</label>
             <input id="edit-clue-${entry.id}" class="edit-clue" type="text" maxlength="200" value="${escapeAttribute(entry.clue)}" />
             <label for="edit-answer-${entry.id}">Answer</label>
-            <input id="edit-answer-${entry.id}" class="edit-answer" type="text" maxlength="40" value="${escapeAttribute(entry.answer)}" />
+            <input id="edit-answer-${entry.id}" class="edit-answer" type="text" maxlength="80" value="${escapeAttribute(entry.answerDisplay)}" />
           </div>
           <div class="entry-actions">
             <button type="button" class="small-button" data-action="save-edit">Save</button>
@@ -268,10 +378,10 @@ function renderClues() {
         item.innerHTML = `
           <div class="entry-text">
             <span class="clue-text">${entry.clue}</span>
-            <span class="answer-text">${entry.answer}</span>
+            <span class="answer-text">${entry.answerDisplay || entry.answer}</span>
           </div>
           <div class="entry-actions">
-            <span class="count-pill">${entry.letterCount}</span>
+            <span class="count-pill">${entry.answerPattern.includes(',') ? `(${entry.answerPattern})` : entry.letterCount}</span>
             <button type="button" class="small-button secondary" data-action="edit">Edit</button>
             <button type="button" class="small-button danger" data-action="delete">Delete</button>
           </div>
@@ -288,10 +398,11 @@ function renderClues() {
 
 async function updateEntry(entryId, clueValue, answerValue) {
   const clue = clueValue.trim();
-  const answer = normalizeAnswer(answerValue);
+  const parsedAnswer = parseAnswerInput(answerValue);
+  const { answer, letterCount, answerPattern } = parsedAnswer;
 
   if (!clue || !answer) {
-    setActionMessage('Provide both a clue and a valid alphabetic answer.', true);
+    setActionMessage('Provide both a clue and a valid answer using letters (spaces allowed between words).', true);
     return;
   }
 
@@ -299,7 +410,8 @@ async function updateEntry(entryId, clueValue, answerValue) {
     await updateDoc(doc(db, 'crosswordClues', entryId), {
       clue,
       answer,
-      letterCount: answer.length,
+      letterCount,
+      answerPattern,
       updatedAt: serverTimestamp(),
     });
     activeEditId = null;
@@ -331,7 +443,7 @@ async function loadEntries() {
 
   try {
     const snapshot = await getDocs(cluesRef);
-    entries = snapshot.docs.map(doc => ({
+    entries = snapshot.docs.map(doc => normalizeEntry({
       id: doc.id,
       ...doc.data(),
     }));
@@ -351,17 +463,19 @@ if (entryForm) {
     setFormMessage('');
 
     const clue = clueInput.value.trim();
-    const answer = normalizeAnswer(answerInput.value);
+    const parsedAnswer = parseAnswerInput(answerInput.value);
+    const { answer, letterCount, answerPattern } = parsedAnswer;
 
     if (!clue || !answer) {
-      setFormMessage('Enter both a clue and answer.', true);
+      setFormMessage('Enter both a clue and answer (spaces are fine).', true);
       return;
     }
 
     const entry = {
       clue,
       answer,
-      letterCount: answer.length,
+      letterCount,
+      answerPattern,
       createdAt: serverTimestamp(),
     };
 
