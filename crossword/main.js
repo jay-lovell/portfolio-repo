@@ -45,6 +45,22 @@ let entries = [];
 let knownLetters = [];
 let activeEditId = null;
 
+const TAG_COLOURS = [
+  '#e63946', '#f4a261', '#2a9d8f', '#264653', '#e9c46a',
+  '#6a4c93', '#1982c4', '#8ac926', '#ff595e', '#ffca3a',
+  '#8338ec', '#3a86ff', '#fb5607', '#06d6a0', '#118ab2',
+  '#ef476f', '#ffd166', '#073b4c', '#9b5de5', '#00bbf9',
+];
+const categoryColourMap = new Map();
+
+function getCategoryColour(category) {
+  if (categoryColourMap.has(category)) return categoryColourMap.get(category);
+  const index = categoryColourMap.size % TAG_COLOURS.length;
+  const colour = TAG_COLOURS[index];
+  categoryColourMap.set(category, colour);
+  return colour;
+}
+
 const FLASH_KEY = 'crosswordFlashMessage';
 
 function setFlashMessage(message, isError = false) {
@@ -425,6 +441,7 @@ function renderClues() {
           <div class="entry-text">
             <span class="clue-text">${entry.clue}</span>
             <span class="answer-text">${entry.answerDisplay || entry.answer}</span>
+            <span class="category-label" style="--tag-colour: ${getCategoryColour(entry.category)}">${escapeAttribute(entry.category)}</span>
           </div>
           <div class="entry-actions">
             <span class="count-pill">${entry.answerPattern.includes(',') ? `(${entry.answerPattern})` : entry.letterCount}</span>
