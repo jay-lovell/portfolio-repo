@@ -25,6 +25,10 @@
         <label for="clue-input">Clue</label>
         <input id="clue-input" type="text" maxlength="200" required />
 
+        <label for="category-input">Category (optional)</label>
+        <input id="category-input" type="text" maxlength="60" list="category-suggestions" placeholder="e.g. Geography, Film" />
+        <datalist id="category-suggestions"></datalist>
+
         <label for="answer-input">Answer</label>
         <input id="answer-input" type="text" maxlength="80" required />
         <p class="helper-text">Use spaces between words (for example: NEW YORK).</p>
@@ -37,7 +41,6 @@
         <button type="submit">Save entry</button>
       </form>
       <output id="form-message" class="message" aria-live="polite"></output>
-      <output id="action-message" class="message" aria-live="polite"></output>
     </section>
   </main>
 
