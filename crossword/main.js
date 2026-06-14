@@ -28,16 +28,18 @@ const pageType = pageShell?.dataset.page || 'solve';
 
 const entryForm = document.getElementById('entry-form');
 const clueInput = document.getElementById('clue-input');
+const categoryInput = document.getElementById('category-input');
+const categorySuggestions = document.getElementById('category-suggestions');
 const answerInput = document.getElementById('answer-input');
 const letterCountOutput = document.getElementById('letter-count-output');
 const formMessage = document.getElementById('form-message');
 
+const categoryFilter = document.getElementById('category-filter');
 const lengthFilter = document.getElementById('length-filter');
 const clueSearch = document.getElementById('clue-search');
 const patternBoxes = document.getElementById('pattern-boxes');
 const clueList = document.getElementById('clue-list');
-const listStatus = document.getElementById('list-status');
-const actionMessage = document.getElementById('action-message');
+const statusMessage = document.getElementById('status-message');
 
 let entries = [];
 let knownLetters = [];
@@ -137,6 +139,7 @@ function normalizeEntry(rawEntry) {
     answerPattern,
     answerDisplay: formatAnswerWithSegments(answer, segments),
     breakpoints: breakpointsFromSegments(segments),
+    category: rawEntry.category ? String(rawEntry.category).trim() : 'Uncategorised',
   };
 }
 
@@ -157,16 +160,10 @@ function setFormMessage(message, isError = false) {
   formMessage.style.color = isError ? '#c0392b' : '';
 }
 
-function setListStatus(message, isError = false) {
-  if (!listStatus) return;
-  listStatus.textContent = message;
-  listStatus.style.color = isError ? '#c0392b' : '';
-}
-
-function setActionMessage(message, isError = false) {
-  if (!actionMessage) return;
-  actionMessage.textContent = message;
-  actionMessage.style.color = isError ? '#c0392b' : '';
+function setStatus(message, isError = false) {
+  if (!statusMessage) return;
+  statusMessage.textContent = message;
+  statusMessage.style.color = isError ? '#c0392b' : '';
 }
 
 function sortByLengthThenClue(list) {
@@ -210,6 +207,44 @@ function rebuildLengthFilter() {
   if (current !== 'all' && patterns.includes(current)) {
     lengthFilter.value = current;
   }
+}
+
+function rebuildCategoryFilter() {
+  if (!categoryFilter) return;
+  const current = categoryFilter.value;
+  const categories = [...new Set(entries.map(entry => entry.category))].sort((a, b) => {
+    if (a === 'Uncategorised') return 1;
+    if (b === 'Uncategorised') return -1;
+    return a.localeCompare(b);
+  });
+
+  categoryFilter.innerHTML = '<option value="all">All categories</option>';
+  categories.forEach(cat => {
+    const option = document.createElement('option');
+    option.value = cat;
+    option.textContent = cat;
+    categoryFilter.append(option);
+  });
+
+  if (current !== 'all' && categories.includes(current)) {
+    categoryFilter.value = current;
+  }
+}
+
+function populateCategorySuggestions() {
+  const categories = [...new Set(entries.map(entry => entry.category))]
+    .filter(c => c !== 'Uncategorised')
+    .sort((a, b) => a.localeCompare(b));
+
+  [categorySuggestions, document.getElementById('edit-cat-suggestions')].forEach(dl => {
+    if (!dl) return;
+    dl.innerHTML = '';
+    categories.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat;
+      dl.append(option);
+    });
+  });
 }
 
 function tokenFromInputValue(value) {
@@ -305,9 +340,14 @@ function renderPatternBoxes() {
 
 function getFilteredEntries() {
   const selectedPattern = lengthFilter?.value || 'all';
+  const selectedCategory = categoryFilter?.value || 'all';
   const searchValue = clueSearch?.value.trim().toLowerCase() || '';
 
   return entries.filter(entry => {
+    if (selectedCategory !== 'all' && entry.category !== selectedCategory) {
+      return false;
+    }
+
     if (selectedPattern !== 'all' && entry.answerPattern !== selectedPattern) {
       return false;
     }
@@ -330,11 +370,11 @@ function renderClues() {
   clueList.innerHTML = '';
 
   if (!filtered.length) {
-    setListStatus('No clues match the current filters. Try another pattern or length.');
+    setStatus('No clues match the current filters. Try another pattern or length.');
     return;
   }
 
-  setListStatus(`${filtered.length} clue${filtered.length === 1 ? '' : 's'} shown.`);
+  setStatus(`${filtered.length} clue${filtered.length === 1 ? '' : 's'} shown.`);
 
   const grouped = new Map();
   filtered.forEach(entry => {
@@ -362,10 +402,13 @@ function renderClues() {
 
       if (activeEditId === entry.id) {
         item.className = 'editing-item';
+        const catValue = entry.category === 'Uncategorised' ? '' : entry.category;
         item.innerHTML = `
           <div class="entry-edit-grid">
             <label for="edit-clue-${entry.id}">Clue</label>
             <input id="edit-clue-${entry.id}" class="edit-clue" type="text" maxlength="200" value="${escapeAttribute(entry.clue)}" />
+            <label for="edit-category-${entry.id}">Category</label>
+            <input id="edit-category-${entry.id}" class="edit-category" type="text" maxlength="60" list="edit-cat-suggestions" value="${escapeAttribute(catValue)}" />
             <label for="edit-answer-${entry.id}">Answer</label>
             <input id="edit-answer-${entry.id}" class="edit-answer" type="text" maxlength="80" value="${escapeAttribute(entry.answerDisplay)}" />
           </div>
@@ -396,13 +439,14 @@ function renderClues() {
   });
 }
 
-async function updateEntry(entryId, clueValue, answerValue) {
+async function updateEntry(entryId, clueValue, answerValue, categoryValue) {
   const clue = clueValue.trim();
+  const category = (categoryValue || '').trim();
   const parsedAnswer = parseAnswerInput(answerValue);
   const { answer, letterCount, answerPattern } = parsedAnswer;
 
   if (!clue || !answer) {
-    setActionMessage('Provide both a clue and a valid answer using letters (spaces allowed between words).', true);
+    setStatus('Provide both a clue and a valid answer using letters (spaces allowed between words).', true);
     return;
   }
 
@@ -412,14 +456,15 @@ async function updateEntry(entryId, clueValue, answerValue) {
       answer,
       letterCount,
       answerPattern,
+      category: category || '',
       updatedAt: serverTimestamp(),
     });
     activeEditId = null;
-    setActionMessage('Entry updated.');
+    setStatus('Entry updated.');
     await loadEntries();
   } catch (error) {
     console.error('Firestore update error:', error);
-    setActionMessage('Could not update entry right now.', true);
+    setStatus('Could not update entry right now.', true);
   }
 }
 
@@ -430,16 +475,16 @@ async function deleteEntry(entryId) {
   try {
     await deleteDoc(doc(db, 'crosswordClues', entryId));
     activeEditId = null;
-    setActionMessage('Entry deleted.');
+    setStatus('Entry deleted.');
     await loadEntries();
   } catch (error) {
     console.error('Firestore delete error:', error);
-    setActionMessage('Could not delete entry right now.', true);
+    setStatus('Could not delete entry right now.', true);
   }
 }
 
 async function loadEntries() {
-  if (listStatus) setListStatus('Loading clues...');
+  if (statusMessage) setStatus('Loading clues...');
 
   try {
     const snapshot = await getDocs(cluesRef);
@@ -448,12 +493,14 @@ async function loadEntries() {
       ...doc.data(),
     }));
 
+    rebuildCategoryFilter();
     rebuildLengthFilter();
+    populateCategorySuggestions();
     renderPatternBoxes();
     renderClues();
   } catch (error) {
     console.error('Firestore load error:', error);
-    setListStatus('Could not load clues right now.', true);
+    setStatus('Could not load clues right now.', true);
   }
 }
 
@@ -463,6 +510,7 @@ if (entryForm) {
     setFormMessage('');
 
     const clue = clueInput.value.trim();
+    const category = (categoryInput?.value || '').trim();
     const parsedAnswer = parseAnswerInput(answerInput.value);
     const { answer, letterCount, answerPattern } = parsedAnswer;
 
@@ -476,12 +524,14 @@ if (entryForm) {
       answer,
       letterCount,
       answerPattern,
+      category: category || '',
       createdAt: serverTimestamp(),
     };
 
     try {
       await addDoc(cluesRef, entry);
       clueInput.value = '';
+      if (categoryInput) categoryInput.value = '';
       answerInput.value = '';
       updateCountPreview();
       setFormMessage('Entry saved.');
@@ -512,7 +562,7 @@ if (clueList) {
 
     if (action === 'cancel-edit') {
       activeEditId = null;
-      setActionMessage('Edit cancelled.');
+      setStatus('Edit cancelled.');
       renderClues();
       return;
     }
@@ -520,7 +570,8 @@ if (clueList) {
     if (action === 'save-edit') {
       const editClue = item.querySelector('.edit-clue');
       const editAnswer = item.querySelector('.edit-answer');
-      await updateEntry(entryId, editClue?.value || '', editAnswer?.value || '');
+      const editCategory = item.querySelector('.edit-category');
+      await updateEntry(entryId, editClue?.value || '', editAnswer?.value || '', editCategory?.value || '');
       return;
     }
 
@@ -532,6 +583,12 @@ if (clueList) {
 
 if (answerInput) {
   answerInput.addEventListener('input', updateCountPreview);
+}
+
+if (categoryFilter) {
+  categoryFilter.addEventListener('change', () => {
+    renderClues();
+  });
 }
 
 if (lengthFilter) {
@@ -550,11 +607,12 @@ if (clueSearch) {
 
 const flash = consumeFlashMessage();
 if (flash) {
-  setActionMessage(flash.message, flash.isError);
+  setStatus(flash.message, flash.isError);
 }
 
 if (pageType === 'add') {
   updateCountPreview();
+  loadEntries();
 }
 
 if (pageType === 'solve') {
