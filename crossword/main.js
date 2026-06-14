@@ -100,10 +100,14 @@ function formatAnswerWithSegments(answer, segments) {
   return words.join(' ');
 }
 
+function formatPatternDisplay(pattern, total) {
+  return pattern.includes(',') ? `${total} letters (${pattern})` : `${total} letters`;
+}
+
 function parseAnswerInput(rawValue) {
   const words = String(rawValue)
     .toUpperCase()
-    .match(/[A-Z]+/g) || [];
+    .match(/[\p{L}]+/gu) || [];
 
   const answer = words.join('');
   const segments = words.map(word => word.length);
@@ -119,7 +123,7 @@ function parseAnswerInput(rawValue) {
 }
 
 function normalizeEntry(rawEntry) {
-  const answer = String(rawEntry.answer || '').toUpperCase().replace(/[^A-Z]/g, '');
+  const answer = String(rawEntry.answer || '').toUpperCase().replace(/[^\p{L}]/gu, '');
   const fallbackCount = Number(rawEntry.letterCount) || answer.length;
   let segments = parsePatternSegments(rawEntry.answerPattern);
   if (!segments.length && fallbackCount > 0) segments = [fallbackCount];
@@ -147,8 +151,7 @@ function updateCountPreview() {
     letterCountOutput.value = '0';
     return;
   }
-  const patternText = parsed.answerPattern.includes(',') ? ` (${parsed.answerPattern})` : '';
-  letterCountOutput.value = `${parsed.letterCount}${patternText}`;
+  letterCountOutput.value = formatPatternDisplay(parsed.answerPattern, parsed.letterCount);
 }
 
 function setFormMessage(message, isError = false) {
@@ -203,7 +206,7 @@ function rebuildLengthFilter() {
     const total = totalFromSegments(segments);
     const option = document.createElement('option');
     option.value = pattern;
-    option.textContent = pattern.includes(',') ? `${total} letters (${pattern})` : `${total} letters`;
+    option.textContent = formatPatternDisplay(pattern, total);
     lengthFilter.append(option);
   });
 
@@ -214,7 +217,7 @@ function rebuildLengthFilter() {
 
 function tokenFromInputValue(value) {
   if (value === ' ') return ' ';
-  return value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 1);
+  return value.toUpperCase().replace(/[^\p{L}]/gu, '').slice(0, 1);
 }
 
 function applyTokenToInput(input, index, token) {
@@ -353,7 +356,7 @@ function renderClues() {
     const section = document.createElement('section');
     section.className = 'group';
     const patternLength = totalFromSegments(parsePatternSegments(pattern));
-    section.innerHTML = `<h3>${pattern.includes(',') ? `${patternLength} letters (${pattern})` : `${patternLength} letters`}</h3>`;
+    section.innerHTML = `<h3>${formatPatternDisplay(pattern, patternLength)}</h3>`;
     const list = document.createElement('ul');
 
     grouped.get(pattern).forEach(entry => {
