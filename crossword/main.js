@@ -425,6 +425,7 @@ function renderClues() {
           <div class="entry-text">
             <span class="clue-text">${entry.clue}</span>
             <span class="answer-text">${entry.answerDisplay || entry.answer}</span>
+            <span class="category-label">${escapeAttribute(entry.category)}</span>
           </div>
           <div class="entry-actions">
             <span class="count-pill">${entry.answerPattern.includes(',') ? `(${entry.answerPattern})` : entry.letterCount}</span>
