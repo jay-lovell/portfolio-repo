@@ -249,7 +249,7 @@ img {
 
 @media (max-width: 640px) {
   .page {
-    width: min(100% - 20px, 1100px);
+    width: min(1100px, 100% - 20px);
     padding-top: 20px;
   }
 
