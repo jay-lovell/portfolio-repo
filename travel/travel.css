@@ -101,6 +101,7 @@ img {
   color: var(--muted);
   line-height: 1.7;
   font-size: 1rem;
+  font-style: italic;
 }
 
 .overview {
