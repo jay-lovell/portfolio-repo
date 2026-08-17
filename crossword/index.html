@@ -9,51 +9,49 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <main class="page-shell">
+  <main class="page-shell" data-page="solve">
     <header class="hero">
       <h1>Crossword Helper</h1>
-      <p>Save clues and quickly filter by length and known letter positions.</p>
+      <p>Enter known letters to filter clues.</p>
+      <nav class="page-nav" aria-label="Crossword pages">
+        <a class="nav-link current" href="./index.html" aria-current="page">Solve</a>
+        <a class="nav-link" href="./add.html">Add clue</a>
+      </nav>
     </header>
 
     <section class="panel">
-      <h2>Add entry</h2>
-      <form id="entry-form" class="entry-form">
-        <label for="clue-input">Clue</label>
-        <input id="clue-input" type="text" maxlength="200" required />
-
-        <label for="answer-input">Answer</label>
-        <input id="answer-input" type="text" maxlength="40" required />
-
-        <div class="meta-row">
-          <span>Letter count:</span>
-          <output id="letter-count-output">0</output>
-        </div>
-
-        <button type="submit">Save entry</button>
-      </form>
-      <p id="form-message" class="message" role="status" aria-live="polite"></p>
-    </section>
-
-    <section class="panel">
-      <h2>Filters</h2>
       <div class="filter-row">
-        <label for="length-filter">Letter count</label>
-        <select id="length-filter">
-          <option value="all">All lengths</option>
+        <label for="category-filter">Category</label>
+        <select id="category-filter">
+          <option value="all">All categories</option>
         </select>
       </div>
 
-      <div>
-        <p class="pattern-label">Known letters</p>
-        <div id="pattern-boxes" class="pattern-boxes" aria-label="Crossword letter filter boxes"></div>
+      <div class="filter-row">
+        <label for="length-filter">Answer pattern</label>
+        <select id="length-filter">
+          <option value="all">All answers</option>
+        </select>
       </div>
+
+      <div class="filter-row">
+        <label for="clue-search">Clue text (optional)</label>
+        <input id="clue-search" type="search" maxlength="200" placeholder="Type part of a clue" />
+      </div>
+
+      <div>
+        <p class="pattern-label">Grid letters</p>
+        <div id="pattern-boxes" class="pattern-boxes" aria-label="Letter filter boxes — wider gaps show word breaks"></div>
+      </div>
+      <output id="status-message" class="message" aria-live="polite"></output>
     </section>
 
     <section class="panel">
       <h2>Clues</h2>
-      <p id="list-status" class="message" role="status" aria-live="polite"></p>
       <div id="clue-list" class="clue-list"></div>
     </section>
+
+    <datalist id="edit-cat-suggestions"></datalist>
   </main>
 
   <script type="module" src="./main.js"></script>

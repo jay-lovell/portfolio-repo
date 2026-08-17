@@ -6,7 +6,8 @@
     "sass": "^1.73.1"
   },
   "scripts": {
-    "build:sass": "sass --no-source-map weight/weightcalc.scss:weight/weightcalc.css",
-    "watch:sass": "sass --watch weight/weightcalc.scss:weight/weightcalc.css"
+    "build:sass": "sass --no-source-map presc/weight/weightcalc.scss:presc/weight/weightcalc.css",
+    "watch:sass": "sass --watch presc/weight/weightcalc.scss:presc/weight/weightcalc.css",
+    "check": "node --check crossword/main.js"
   }
 }

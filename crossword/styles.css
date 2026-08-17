@@ -7,6 +7,7 @@
   --text: #1a1a1a;
   --muted: #555555;
   --highlight: #f5e6b8;
+  --danger: #a32116;
 }
 
 *,
@@ -28,7 +29,12 @@ body {
   margin: 0 auto;
   padding: 32px 24px 48px;
   display: grid;
-  gap: 24px;
+  gap: 20px;
+}
+
+.panel-wide {
+  width: min(620px, 100%);
+  margin: 0 auto;
 }
 
 .hero {
@@ -51,14 +57,40 @@ body {
   color: var(--muted);
   font-style: italic;
   font-family: 'Libre Baskerville', Georgia, serif;
-  font-size: 0.95rem;
+  font-size: 1rem;
+}
+
+.page-nav {
+  margin-top: 14px;
+  display: inline-flex;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: var(--text);
+  background: var(--surface);
+  padding: 11px 16px;
+  border-right: 1px solid var(--border-light);
+  font-weight: 700;
+}
+
+.nav-link:last-child {
+  border-right: none;
+}
+
+.nav-link.current {
+  background: var(--accent);
+  color: #fff;
 }
 
 .panel {
   background: var(--surface);
   border: 1px solid var(--border-light);
-  border-radius: 2px;
-  padding: 20px;
+  border-radius: 4px;
+  padding: 22px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
@@ -75,12 +107,12 @@ body {
 
 .entry-form {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 label {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--muted);
@@ -90,11 +122,12 @@ input,
 select,
 button {
   font: inherit;
-  border-radius: 2px;
+  border-radius: 4px;
   border: 1px solid var(--border-light);
   background: var(--bg);
   color: var(--text);
-  padding: 10px 12px;
+  padding: 12px 13px;
+  min-height: 44px;
 }
 
 input:focus,
@@ -111,7 +144,7 @@ button {
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 12px 16px;
+  padding: 12px 18px;
 }
 
 button:hover {
@@ -128,9 +161,10 @@ button:hover {
 
 .message {
   margin: 10px 0 0;
-  min-height: 1.2em;
+  min-height: 1.4em;
   color: var(--muted);
-  font-style: italic;
+  font-style: normal;
+  font-size: 0.98rem;
 }
 
 .filter-row {
@@ -139,7 +173,7 @@ button:hover {
 }
 
 .pattern-label {
-  margin: 14px 0 8px;
+  margin: 14px 0 6px;
   color: var(--muted);
   font-weight: 600;
   font-size: 0.9rem;
@@ -147,25 +181,31 @@ button:hover {
   letter-spacing: 0.03em;
 }
 
+.helper-text {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
 .pattern-boxes {
   display: flex;
   flex-wrap: wrap;
-  gap: 0;
+  gap: 4px;
 }
 
 .letter-box {
-  width: 40px;
-  height: 40px;
+  width: 46px;
+  height: 46px;
   padding: 0;
   text-align: center;
-  text-transform: uppercase;
+  text-transform: none;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-family: 'Libre Baskerville', Georgia, serif;
-  border-radius: 0;
+  border-radius: 4px;
   border: 2px solid var(--border);
   background: #ffffff;
-  margin-right: -2px;
+  min-height: unset;
 }
 
 .letter-box:focus {
@@ -175,9 +215,16 @@ button:hover {
   z-index: 1;
 }
 
+.word-gap {
+  width: 14px;
+  min-height: 46px;
+  border-bottom: 2px dotted var(--border-light);
+  align-self: center;
+}
+
 .clue-list {
   display: grid;
-  gap: 16px;
+  gap: 14px;
 }
 
 .group h3 {
@@ -201,22 +248,167 @@ button:hover {
 .group li {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
   border-bottom: 1px solid var(--border-light);
-  padding: 10px 4px;
+  padding: 12px 4px;
+  align-items: center;
 }
 
 .group li:last-child {
   border-bottom: none;
 }
 
+.entry-text {
+  display: grid;
+  gap: 4px;
+}
+
 .clue-text {
   color: var(--text);
+  font-size: 1rem;
+}
+
+.answer-text {
+  color: var(--muted);
+  font-family: 'Libre Baskerville', Georgia, serif;
+  font-size: 0.95rem;
+}
+
+.category-label {
+  display: inline-block;
+  position: relative;
+  padding: 2px 10px 2px 16px;
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 600;
+  color: #fff;
+  background: var(--tag-colour, var(--muted));
+  border-radius: 0 4px 4px 0;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.category-label::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-top: calc(0.75rem * 1.4 / 2 + 2px) solid transparent;
+  border-bottom: calc(0.75rem * 1.4 / 2 + 2px) solid transparent;
+  border-left: 8px solid var(--bg);
+}
+
+.category-label::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  background: var(--bg);
+  border-radius: 50%;
 }
 
 .count-pill {
   color: var(--muted);
   white-space: nowrap;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 600;
+  font-family: 'Libre Baskerville', Georgia, serif;
+}
+
+.entry-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.small-button {
+  padding: 8px 12px;
+  min-height: 38px;
+  font-size: 0.85rem;
+}
+
+.small-button.secondary {
+  background: #efede7;
+  color: var(--text);
+  border-color: var(--border-light);
+}
+
+.small-button.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.entry-edit-grid {
+  display: grid;
+  gap: 8px;
+  flex: 1;
+}
+
+.entry-edit-grid label {
+  font-size: 0.82rem;
+}
+
+.editing-item {
+  align-items: flex-start;
+}
+
+@media (max-width: 640px) {
+  .page-shell {
+    padding: 20px 14px 30px;
+    gap: 14px;
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
+  .hero h1 {
+    font-size: clamp(1.55rem, 6vw, 2rem);
+  }
+
+  .hero p,
+  .message,
+  .helper-text {
+    font-size: 1rem;
+  }
+
+  .page-nav {
+    width: 100%;
+  }
+
+  .nav-link {
+    flex: 1;
+    text-align: center;
+  }
+
+  .group li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .entry-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .small-button {
+    min-height: 42px;
+  }
+
+  .letter-box {
+    width: 48px;
+    height: 48px;
+    font-size: 1.25rem;
+  }
+
+  .word-gap {
+    min-height: 48px;
+  }
 }

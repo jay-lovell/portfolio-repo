@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Crossword Clue</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+Pro:wght@400;600;700&display=swap" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="page-shell" data-page="add">
+    <header class="hero">
+      <h1>Add Crossword Clue</h1>
+      <p>Add new clues and answers.</p>
+      <nav class="page-nav" aria-label="Crossword pages">
+        <a class="nav-link" href="./index.html">Solve</a>
+        <a class="nav-link current" href="./add.html" aria-current="page">Add clue</a>
+      </nav>
+    </header>
+
+    <section class="panel panel-wide">
+      <h2>Add entry</h2>
+      <form id="entry-form" class="entry-form">
+        <label for="clue-input">Clue</label>
+        <input id="clue-input" type="text" maxlength="200" required />
+
+        <label for="category-input">Category (optional)</label>
+        <input id="category-input" type="text" maxlength="60" list="category-suggestions" placeholder="e.g. Geography, Film" />
+        <datalist id="category-suggestions"></datalist>
+
+        <label for="answer-input">Answer</label>
+        <input id="answer-input" type="text" maxlength="80" required />
+        <p class="helper-text">Use spaces between words (for example: NEW YORK).</p>
+
+        <div class="meta-row">
+          <span>Letter count:</span>
+          <output id="letter-count-output">0</output>
+        </div>
+
+        <button type="submit">Save entry</button>
+      </form>
+      <output id="form-message" class="message" aria-live="polite"></output>
+    </section>
+  </main>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
