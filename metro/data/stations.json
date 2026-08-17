@@ -25,7 +25,7 @@
     {"id": "s018", "name": "Zličín", "lines": ["B"], "interchange": false, "targets": [{"line": "B", "image": "./images/B/zlicin.jpg", "datePhotographed": "16 January 2026"}], "position": {"x": 20, "y": 260}},
     {"id": "s019", "name": "Stodůlky", "lines": ["B"], "interchange": false, "targets": [{"line": "B", "image": "./images/B/stodulky.jpg", "datePhotographed": "16 January 2026"}], "position": {"x": 60, "y": 250}},
     {"id": "s020", "name": "Luka", "lines": ["B"], "interchange": false, "targets": [{"line": "B", "image": "./images/B/luka.jpg", "datePhotographed": "16 January 2026"}], "position": {"x": 180, "y": 220}},
-    {"id": "s021", "name": "Lužiny", "lines": ["B"], "interchange": false, "targets": [{"line": "B", "image": "./images/B/luziny.jpg", "datePhotographed": null}], "position": {"x": 220, "y": 210}},
+    {"id": "s021", "name": "Lužiny", "lines": ["B"], "interchange": false, "targets": [{"line": "B", "image": "./images/B/luziny.jpg", "datePhotographed": "16 January 2026"}], "position": {"x": 220, "y": 210}},
     {"id": "s022", "name": "Hůrka", "lines": ["B"], "interchange": false, "targets": [{"line": "B", "image": "./images/B/hurka.jpg", "datePhotographed": "16 January 2026"}], "position": {"x": 140, "y": 230}},
     {"id": "s023", "name": "Nové Butovice", "lines": ["B"], "interchange": false, "targets": [{"line": "B", "image": "./images/B/nove-butovice.jpg", "datePhotographed": "16 January 2026"}], "position": {"x": 280, "y": 210}},
     {"id": "s024", "name": "Jinonice", "lines": ["B"], "interchange": false, "targets": [{"line": "B", "image": "./images/B/jinonice.jpg", "datePhotographed": "16 January 2026"}], "position": {"x": 300, "y": 220}},
