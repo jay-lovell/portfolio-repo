@@ -34,7 +34,9 @@ const ProgressTracker = (() => {
         if (!targets) return false;
         const target = targets.find(t => t.line === line);
         if (!target) return false;
+        let complete = target.image && target.datePhotographed !== null && target.datePhotographed !== undefined && target.datePhotographed !== '';
         // A target is complete if it has a valid image path and datePhotographed is set
+        console.log("Target complete for " + target.image + " is " + complete)
         return target.image && target.datePhotographed !== null && target.datePhotographed !== undefined && target.datePhotographed !== '';
     };
 
@@ -46,6 +48,9 @@ const ProgressTracker = (() => {
     const isStationComplete = (station) => {
         if (!station.targets) return false;
         // All targets must be complete
+        let complete =station.targets.every(target => isTargetComplete(station.targets, target.line));
+                console.log("Station complete for " + station.name + " is " + complete)
+
         return station.targets.every(target => isTargetComplete(station.targets, target.line));
     };
 

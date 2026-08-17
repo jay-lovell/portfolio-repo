@@ -1,127 +1,288 @@
 /**
- * Metro map rendering logic - Grid-based layout
+ * Metro map rendering logic
+ * Grid-based layout
+ *
+ * Images are loaded directly by the browser rather than being
+ * preloaded into a separate cache. This avoids async rendering
+ * race conditions.
  */
 
 const MetroMap = (() => {
     let stationsData = null;
-    let imageCache = {};
 
+    /**
+     * Initialise the metro map.
+     */
     const init = (data) => {
+        if (!data || !Array.isArray(data.stations)) {
+            console.error('MetroMap: Invalid station data.', data);
+            return;
+        }
+
         stationsData = data;
-        preloadImages();
     };
 
     /**
-     * Preload all images to check if they exist
-     */
-    const preloadImages = () => {
-        if (!stationsData) return;
-
-        stationsData.stations.forEach(station => {
-            station.targets.forEach(target => {
-                if (target.image) {
-                    const img = new Image();
-                    img.onload = () => {
-                        imageCache[target.image] = true;
-                    };
-                    img.onerror = () => {
-                        imageCache[target.image] = false;
-                    };
-                    img.src = target.image;
-                }
-            });
-        });
-    };
-
-    /**
-     * Check if an image exists
-     */
-    const hasImage = (imagePath) => {
-        return imageCache[imagePath] === true;
-    };
-
-    /**
-     * Get line color
+     * Get the colour for a line.
      */
     const getLineColor = (line) => {
-        if (!stationsData || !stationsData.lineColors) return '#999';
+        if (!stationsData?.lineColors) {
+            return '#999';
+        }
+
         return stationsData.lineColors[line] || '#999';
     };
 
     /**
-     * Format date for display
+     * Format a date for display.
      */
     const formatDate = (dateString) => {
-        if (!dateString) return 'not yet';
-        try {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-        } catch {
+        if (!dateString) {
+            return 'not yet';
+        }
+
+        const date = new Date(dateString);
+
+        if (Number.isNaN(date.getTime())) {
             return dateString;
         }
+
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
     };
 
     /**
-     * Create a station tile element for the grid
+     * Create a placeholder for a missing/unavailable image.
      */
-    const createStationTile = (station, line, target) => {
-        const tile = document.createElement('div');
-        tile.className = 'station-tile';
-        tile.setAttribute('role', 'button');
-        tile.setAttribute('tabindex', '0');
-        
-        // Line color for the border
-        const lineColor = getLineColor(line);
-        tile.style.borderColor = lineColor;
+    const createPlaceholder = (text = 'Not photographed yet') => {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'station-tile-placeholder';
 
-        // Image section
+        const icon = document.createElement('div');
+        icon.className = 'station-tile-placeholder-icon';
+        icon.textContent = '📷';
+
+        const message = document.createElement('div');
+        message.textContent = text;
+
+        placeholder.appendChild(icon);
+        placeholder.appendChild(message);
+
+        return placeholder;
+    };
+
+    /**
+     * Add the station tile's keyboard/click behaviour.
+     */
+    const makeTileInteractive = (tile, station, line, target) => {
+        tile.setAttribute(
+            'aria-label',
+            `${station.name} - Line ${line}, photographed ${formatDate(target.datePhotographed)}`
+        );
+
+        tile.addEventListener('click', () => {
+            showLightbox(station, line, target);
+        });
+
+        tile.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                showLightbox(station, line, target);
+            }
+        });
+    };
+
+    /**
+     * Create the image section of a station tile.
+     */
+    const createImageSection = (station, line, target, isComplete, tile) => {
         const imageContainer = document.createElement('div');
         imageContainer.className = 'station-tile-image';
 
-        const imageExists = hasImage(target.image);
-        const isComplete = ProgressTracker.isTargetComplete(station.targets, line);
+        /*
+         * No image URL.
+         */
+        if (!target?.image) {
+            imageContainer.appendChild(
+                createPlaceholder('Not photographed yet')
+            );
 
-        if (imageExists && isComplete) {
-            const img = document.createElement('img');
-            img.src = target.image;
-            img.alt = `${station.name} - Line ${line}`;
-            imageContainer.appendChild(img);
-            
-            tile.setAttribute('aria-label', `${station.name} - Line ${line}, photographed ${formatDate(target.datePhotographed)}`);
-            tile.addEventListener('click', () => showLightbox(station, line, target));
-            tile.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    showLightbox(station, line, target);
-                }
-            });
-        } else {
-            const placeholder = document.createElement('div');
-            placeholder.className = 'station-tile-placeholder';
-            placeholder.innerHTML = `
-                <div class="station-tile-placeholder-icon">📷</div>
-                <div>Not photographed yet</div>
-            `;
-            imageContainer.appendChild(placeholder);
-            tile.setAttribute('aria-label', `${station.name} - Line ${line}, not photographed`);
+            tile.setAttribute(
+                'aria-label',
+                `${station.name} - Line ${line}, not photographed`
+            );
+
+            return imageContainer;
         }
+
+        /*
+         * Target isn't complete yet.
+         */
+        if (!isComplete) {
+            imageContainer.appendChild(
+                createPlaceholder('Not photographed yet')
+            );
+
+            tile.setAttribute(
+                'aria-label',
+                `${station.name} - Line ${line}, not photographed`
+            );
+
+            return imageContainer;
+        }
+
+        /*
+         * We have an image and the target is complete.
+         *
+         * The browser handles loading the image directly.
+         * This avoids the old preloadImages()/imageCache race.
+         */
+        const img = document.createElement('img');
+
+        img.src = target.image;
+        img.alt = `${station.name} - Line ${line}`;
+        img.loading = 'lazy';
+        img.decoding = 'async';
+
+        /*
+         * If the image loads successfully, keep it.
+         */
+        img.addEventListener('load', () => {
+            console.log(
+                `MetroMap: Image loaded successfully for ${station.name} (${line})`,
+                target.image
+            );
+
+            imageContainer.classList.add('image-loaded');
+        });
+
+        /*
+         * If the image fails, replace it with a useful placeholder.
+         */
+        img.addEventListener('error', () => {
+            console.error(
+                `MetroMap: Failed to load image for ${station.name} (${line}):`,
+                target.image
+            );
+
+            imageContainer.innerHTML = '';
+
+            imageContainer.appendChild(
+                createPlaceholder('Image unavailable')
+            );
+
+            tile.classList.add('image-error');
+
+            tile.setAttribute(
+                'aria-label',
+                `${station.name} - Line ${line}, image unavailable`
+            );
+        });
+
+        imageContainer.appendChild(img);
+
+        makeTileInteractive(tile, station, line, target);
+
+        return imageContainer;
+    };
+
+    /**
+     * Create a station tile.
+     */
+    const createStationTile = (station, line, target) => {
+        const tile = document.createElement('div');
+
+        tile.className = 'station-tile';
+
+        tile.setAttribute('role', 'button');
+        tile.setAttribute('tabindex', '0');
+
+        /*
+         * Line colour.
+         */
+        const lineColor = getLineColor(line);
+
+        tile.style.borderColor = lineColor;
+
+        /*
+         * Check whether this target is complete.
+         *
+         * Keep this isolated so it's easy to debug if the
+         * ProgressTracker is responsible for hiding images.
+         */
+        let isComplete = false;
+
+        try {
+            if (
+                typeof ProgressTracker !== 'undefined' &&
+                typeof ProgressTracker.isTargetComplete === 'function'
+            ) {
+                isComplete = ProgressTracker.isTargetComplete(
+                    station.targets,
+                    line
+                );
+            } else {
+                console.warn(
+                    'MetroMap: ProgressTracker.isTargetComplete() is unavailable.'
+                );
+            }
+        } catch (error) {
+            console.error(
+                'MetroMap: Error checking target completion:',
+                error
+            );
+        }
+
+        /*
+         * Debug information.
+         */
+        console.log('MetroMap tile:', {
+            station: station.name,
+            line,
+            image: target?.image,
+            isComplete
+        });
+
+        /*
+         * Image section.
+         */
+        const imageContainer = createImageSection(
+            station,
+            line,
+            target,
+            isComplete,
+            tile
+        );
 
         tile.appendChild(imageContainer);
 
-        // Info section
+        /*
+         * Information section.
+         */
         const info = document.createElement('div');
         info.className = 'station-tile-info';
-        
+
+        /*
+         * Station name.
+         */
         const nameEl = document.createElement('div');
         nameEl.className = 'station-tile-name';
         nameEl.textContent = station.name;
+
         info.appendChild(nameEl);
 
+        /*
+         * Line name.
+         */
         const lineEl = document.createElement('div');
         lineEl.className = 'station-tile-lines';
         lineEl.textContent = `Line ${line}`;
         lineEl.style.color = lineColor;
         lineEl.style.fontWeight = '600';
+
         info.appendChild(lineEl);
 
         tile.appendChild(info);
@@ -130,34 +291,68 @@ const MetroMap = (() => {
     };
 
     /**
-     * Render all stations as a grid, ordered by line
+     * Render all stations into the grid.
+     *
+     * Stations are grouped in A/B/C line order.
      */
     const renderStations = () => {
         const grid = document.getElementById('station-grid');
+
+        if (!grid) {
+            console.error(
+                'MetroMap: Could not find #station-grid in the document.'
+            );
+            return;
+        }
+
+        /*
+         * Clear the existing grid.
+         */
         grid.innerHTML = '';
 
-        if (!stationsData) return;
+        if (!stationsData) {
+            console.warn('MetroMap: No station data available.');
+            return;
+        }
 
-        // Group stations by line and render in order
         const lines = ['A', 'B', 'C'];
-        
-        lines.forEach(line => {
-            // Get all stations on this line in order
-            const stationsOnLine = stationsData.stations.filter(s => s.lines.includes(line));
-            
-            stationsOnLine.forEach(station => {
-                // Find the target for this specific line
-                const target = station.targets.find(t => t.line === line);
-                if (target) {
-                    const tile = createStationTile(station, line, target);
-                    grid.appendChild(tile);
+
+        lines.forEach((line) => {
+            const stationsOnLine = stationsData.stations.filter((station) => {
+                return Array.isArray(station.lines) &&
+                    station.lines.includes(line);
+            });
+
+            stationsOnLine.forEach((station) => {
+                /*
+                 * Find the target belonging to this line.
+                 */
+                const target = Array.isArray(station.targets)
+                    ? station.targets.find(
+                        (item) => item.line === line
+                    )
+                    : null;
+
+                if (!target) {
+                    console.warn(
+                        `MetroMap: No target found for ${station.name} on Line ${line}`
+                    );
+                    return;
                 }
+
+                const tile = createStationTile(
+                    station,
+                    line,
+                    target
+                );
+
+                grid.appendChild(tile);
             });
         });
     };
 
     /**
-     * Show the lightbox with the selected photo
+     * Show the lightbox for a station image.
      */
     const showLightbox = (station, line, target) => {
         const lightbox = document.getElementById('lightbox');
@@ -165,28 +360,118 @@ const MetroMap = (() => {
         const title = document.getElementById('lightbox-title');
         const date = document.getElementById('lightbox-date');
 
+        if (!lightbox) {
+            console.error('MetroMap: #lightbox not found.');
+            return;
+        }
+
+        if (!image) {
+            console.error('MetroMap: #lightbox-image not found.');
+            return;
+        }
+
+        if (!title) {
+            console.error('MetroMap: #lightbox-title not found.');
+            return;
+        }
+
+        if (!date) {
+            console.error('MetroMap: #lightbox-date not found.');
+            return;
+        }
+
+        /*
+         * Don't open the lightbox if there isn't an image.
+         */
+        if (!target?.image) {
+            console.warn(
+                'MetroMap: Cannot open lightbox because target has no image.'
+            );
+            return;
+        }
+
         image.src = target.image;
         image.alt = `${station.name} - Line ${line}`;
 
-        const lineNames = station.lines.join(' / ');
         title.textContent = `${station.name} — Line ${line}`;
 
-        const formattedDate = formatDate(target.datePhotographed);
-        date.textContent = `Photographed ${formattedDate}`;
+        date.textContent =
+            `Photographed ${formatDate(target.datePhotographed)}`;
 
+        /*
+         * Show the lightbox.
+         */
         lightbox.classList.remove('hidden');
     };
 
     /**
-     * Main render function
+     * Close the lightbox.
+     */
+    const closeLightbox = () => {
+        const lightbox = document.getElementById('lightbox');
+
+        if (!lightbox) {
+            return;
+        }
+
+        lightbox.classList.add('hidden');
+    };
+
+    /**
+     * Set up lightbox close controls.
+     */
+    const initLightbox = () => {
+        const lightbox = document.getElementById('lightbox');
+
+        if (!lightbox) {
+            return;
+        }
+
+        /*
+         * Close buttons.
+         */
+        const closeButtons = lightbox.querySelectorAll(
+            '[data-lightbox-close], .lightbox-close'
+        );
+
+        closeButtons.forEach((button) => {
+            button.addEventListener('click', closeLightbox);
+        });
+
+        /*
+         * Clicking the background closes the lightbox.
+         */
+        lightbox.addEventListener('click', (event) => {
+            if (event.target === lightbox) {
+                closeLightbox();
+            }
+        });
+
+        /*
+         * Escape closes the lightbox.
+         */
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeLightbox();
+            }
+        });
+    };
+
+    /**
+     * Main render function.
      */
     const render = () => {
         renderStations();
     };
 
+    /*
+     * Public API.
+     */
     return {
         init,
         render,
-        showLightbox
+        showLightbox,
+        closeLightbox,
+        initLightbox
     };
 })();
