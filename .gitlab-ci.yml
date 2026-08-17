@@ -1,0 +1,21 @@
+# GitLab CI/CD configuration for deploying to GitLab Pages
+# Place this file as .gitlab-ci.yml in the project root
+
+pages:
+  stage: deploy
+  script:
+    - echo "Deploying Prague Metro Photos to GitLab Pages..."
+    # Copy the metro folder to the public directory
+    - mkdir -p public
+    - cp -r metro/* public/
+    # Ensure index.html is in the root for Pages
+    - ls -la public/
+  artifacts:
+    paths:
+      - public
+  only:
+    - main
+    - master
+  environment:
+    name: production
+    url: https://$CI_PROJECT_NAMESPACE.gitlab.io/$CI_PROJECT_NAME

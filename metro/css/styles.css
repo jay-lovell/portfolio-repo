@@ -1,0 +1,521 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #333;
+    background-color: #f8f8f8;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #ddd;
+}
+
+header h1 {
+    font-size: 3em;
+    font-weight: 700;
+    letter-spacing: -1px;
+    margin-bottom: 10px;
+}
+
+header .subtitle {
+    font-size: 1.1em;
+    color: #666;
+    font-weight: 300;
+}
+
+/* Progress Section */
+.progress-section {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    margin-bottom: 40px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.progress-section h2 {
+    font-size: 1.5em;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.overall-progress {
+    background: #f5f5f5;
+    padding: 20px;
+    border-radius: 6px;
+    margin-bottom: 30px;
+}
+
+.progress-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+.progress-number {
+    font-size: 2em;
+    font-weight: 700;
+    color: #333;
+}
+
+.progress-label {
+    font-size: 0.95em;
+    color: #666;
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 24px;
+    background: #e0e0e0;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-bar {
+    height: 100%;
+    background: #999;
+    border-radius: 12px;
+    transition: width 0.3s ease;
+}
+
+#line-a-progress-bar {
+    background-color: #00A84F;
+}
+
+#line-b-progress-bar {
+    background-color: #FFD100;
+}
+
+#line-c-progress-bar {
+    background-color: #E4001B;
+}
+
+.progress-percentage {
+    font-size: 1em;
+    font-weight: 600;
+    color: #333;
+    display: inline-block;
+}
+
+.line-progress {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.line-progress-item {
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 6px;
+}
+
+.line-progress-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 0.95em;
+}
+
+.line-letter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #333;
+    color: white;
+    font-weight: 700;
+    font-size: 1.1em;
+}
+
+.line-name {
+    flex: 1;
+    padding: 4px 12px;
+    border-radius: 4px;
+    color: white;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.line-count {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.9em;
+}
+
+/* Metro Map Section */
+.metro-map-section {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.station-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1rem;
+    width: 100%;
+}
+
+/* Station Tiles Grid */
+.station-tile {
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    height: 200px;
+    border: 2px solid #e0e0e0;
+}
+
+.station-tile:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.station-tile:focus {
+    outline: 2px solid #0066cc;
+    outline-offset: -2px;
+}
+
+.station-tile-image {
+    width: 100%;
+    height: 140px;
+    background-color: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.station-tile-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.station-tile-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+    color: #999;
+    font-size: 0.75rem;
+    text-align: center;
+    padding: 8px;
+    flex-direction: column;
+}
+
+.station-tile-placeholder-icon {
+    font-size: 2rem;
+    margin-bottom: 4px;
+    opacity: 0.5;
+}
+
+.station-tile-info {
+    padding: 8px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: white;
+}
+
+.station-tile-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #333;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.station-tile-lines {
+    font-size: 0.7rem;
+    color: #666;
+    margin-top: 2px;
+}
+
+/* Lightbox */
+.lightbox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox.hidden {
+    display: none;
+}
+
+.lightbox-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    cursor: pointer;
+}
+
+.lightbox-content {
+    position: relative;
+    z-index: 1001;
+    background: white;
+    border-radius: 8px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.lightbox-image-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f5f5;
+    min-height: 300px;
+}
+
+#lightbox-image {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+}
+
+.lightbox-info {
+    padding: 20px;
+    background: white;
+}
+
+.lightbox-info h3 {
+    font-size: 1.5em;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.lightbox-info p {
+    color: #666;
+    font-size: 0.95em;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1002;
+    transition: background 0.2s ease;
+}
+
+.lightbox-close:hover {
+    background: #f0f0f0;
+}
+
+.lightbox-close span {
+    position: absolute;
+    width: 24px;
+    height: 2px;
+    background: #333;
+}
+
+.lightbox-close span:first-child {
+    transform: rotate(45deg);
+}
+
+.lightbox-close span:last-child {
+    transform: rotate(-45deg);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .container {
+        padding: 15px;
+    }
+
+    header h1 {
+        font-size: 2.2em;
+    }
+
+    .progress-section {
+        padding: 20px;
+    }
+
+    .line-progress {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 1.8em;
+    }
+
+    header .subtitle {
+        font-size: 0.95em;
+    }
+
+    .progress-section {
+        padding: 15px;
+    }
+
+    .progress-number {
+        font-size: 1.5em;
+    }
+
+    .metro-map-section {
+        padding: 10px;
+    }
+
+    .station-label {
+        font-size: 10px;
+    }
+
+    .lightbox-content {
+        max-width: 95vw;
+        max-height: 95vh;
+    }
+
+    #lightbox-image {
+        max-height: 50vh;
+    }
+
+    .lightbox-info {
+        padding: 15px;
+    }
+
+    .lightbox-info h3 {
+        font-size: 1.2em;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+
+    header {
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+    }
+
+    header h1 {
+        font-size: 1.5em;
+    }
+
+    header .subtitle {
+        font-size: 0.85em;
+    }
+
+    .progress-section {
+        padding: 12px;
+        margin-bottom: 20px;
+    }
+
+    .progress-section h2 {
+        font-size: 1.2em;
+        margin-bottom: 15px;
+    }
+
+    .overall-progress {
+        padding: 15px;
+    }
+
+    .progress-number {
+        font-size: 1.2em;
+    }
+
+    .progress-label {
+        font-size: 0.85em;
+    }
+
+    .line-letter {
+        width: 28px;
+        height: 28px;
+        font-size: 0.95em;
+    }
+
+    .station-placeholder {
+        padding: 6px;
+    }
+
+    .station-placeholder-name {
+        font-size: 0.9em;
+    }
+
+    .metro-map-container {
+        min-height: 400px;
+    }
+
+    .metro-map {
+        min-width: 400px;
+    }
+
+    .lightbox-close {
+        width: 36px;
+        height: 36px;
+    }
+
+    .lightbox-close span {
+        width: 20px;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .progress-bar,
+    .station-tile {
+        transition: none;
+    }
+}
+
+/* Focus visible for keyboard navigation */
+.station-tile:focus-visible {
+    outline: 3px solid #0066cc;
+    outline-offset: 2px;
+}
+
+.lightbox-close:focus-visible {
+    outline: 3px solid #0066cc;
+    outline-offset: -3px;
+}

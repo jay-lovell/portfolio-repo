@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prague Metro Photos</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Prague Metro Photos</h1>
+            <p class="subtitle">Documenting every station of the Prague Metro</p>
+        </header>
+
+        <div class="progress-section">
+            <h2>Progress</h2>
+            
+            <div class="overall-progress">
+                <div class="progress-stat">
+                    <span class="progress-number" id="overall-count">0 / 61</span>
+                    <span class="progress-label">stations photographed</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="overall-progress-bar" style="width: 0%"></div>
+                </div>
+                <span class="progress-percentage" id="overall-percentage">0%</span>
+            </div>
+
+            <div class="line-progress">
+                <div class="line-progress-item">
+                    <div class="line-progress-header">
+                        <span class="line-letter">A</span>
+                        <span class="line-name" style="background-color: #00A84F">Line A</span>
+                        <span class="line-count" id="line-a-count">0 / 0</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="line-a-progress-bar" style="width: 0%; background-color: #00A84F"></div>
+                    </div>
+                    <span class="progress-percentage" id="line-a-percentage">0%</span>
+                </div>
+
+                <div class="line-progress-item">
+                    <div class="line-progress-header">
+                        <span class="line-letter">B</span>
+                        <span class="line-name" style="background-color: #FFD100">Line B</span>
+                        <span class="line-count" id="line-b-count">0 / 0</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="line-b-progress-bar" style="width: 0%; background-color: #FFD100"></div>
+                    </div>
+                    <span class="progress-percentage" id="line-b-percentage">0%</span>
+                </div>
+
+                <div class="line-progress-item">
+                    <div class="line-progress-header">
+                        <span class="line-letter">C</span>
+                        <span class="line-name" style="background-color: #E4001B">Line C</span>
+                        <span class="line-count" id="line-c-count">0 / 0</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="line-c-progress-bar" style="width: 0%; background-color: #E4001B"></div>
+                    </div>
+                    <span class="progress-percentage" id="line-c-percentage">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <main class="metro-map-section">
+            <div class="station-grid" id="station-grid">
+                <!-- Station tiles will be rendered here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Lightbox for viewing photos -->
+    <div id="lightbox" class="lightbox hidden">
+        <div class="lightbox-overlay" id="lightbox-overlay"></div>
+        <div class="lightbox-content">
+            <button class="lightbox-close" id="lightbox-close" aria-label="Close">
+                <span></span>
+                <span></span>
+            </button>
+            <div class="lightbox-image-container">
+                <img id="lightbox-image" src="" alt="">
+            </div>
+            <div class="lightbox-info">
+                <h3 id="lightbox-title"></h3>
+                <p id="lightbox-date"></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/progress.js"></script>
+    <script src="js/metro-map.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
