@@ -52,7 +52,7 @@
     {"id": "s045", "name": "Nádraží Holešovice", "lines": ["C"], "interchange": false, "targets": [{"line": "C", "image": "./images/C/nadrazi-holesovice.jpeg", "datePhotographed": "25 June 2025"}], "position": {"x": 390, "y": 310}},
     {"id": "s046", "name": "Vltavská", "lines": ["C"], "interchange": false, "targets": [{"line": "C", "image": "./images/C/vltavska.jpeg", "datePhotographed": "25 June 2025"}], "position": {"x": 360, "y": 290}},
     {"id": "s047", "name": "Hlavní nádraží", "lines": ["C"], "interchange": false, "targets": [{"line": "C", "image": "./images/C/hlavni-nadrazi.jpeg", "datePhotographed": "1 July 2025"}]},
-    {"id": "s048", "name": "I. P. Pavlova", "lines": ["C"], "interchange": false, "targets": [{"line": "C", "image": "./images/C/ip-pavlova.jpeg", "datePhotographed": null}], "position": {"x": 360, "y": 340}},
+    {"id": "s048", "name": "I. P. Pavlova", "lines": ["C"], "interchange": false, "targets": [{"line": "C", "image": "./images/C/ip-pavlova.jpeg", "datePhotographed": "8 August 2026"}], "position": {"x": 360, "y": 340}},
     {"id": "s049", "name": "Vyšehrad", "lines": ["C"], "interchange": false, "targets": [{"line": "C", "image": "./images/C/vysehrad.jpeg", "datePhotographed": null}], "position": {"x": 360, "y": 430}},
     {"id": "s050", "name": "Pražského povstání", "lines": ["C"], "interchange": false, "targets": [{"line": "C", "image": "./images/C/prazskeho-povstani.jpeg", "datePhotographed": null}], "position": {"x": 360, "y": 460}},
     {"id": "s051", "name": "Pankrác", "lines": ["C"], "interchange": false, "targets": [{"line": "C", "image": "./images/C/pankrac.jpeg", "datePhotographed": null}], "position": {"x": 360, "y": 460}},
