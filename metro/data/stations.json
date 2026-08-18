@@ -62,6 +62,6 @@
     {"id": "s055", "name": "Chodov", "lines": ["C"], "interchange": false, "targets": [{"line": "C", "image": "./images/C/chodov.jpg", "datePhotographed": "1 July 2025"}], "position": {"x": 360, "y": 580}},
     {"id": "s056", "name": "Opatov", "lines": ["C"], "interchange": false, "targets": [{"line": "C", "image": "./images/C/opatov.jpg", "datePhotographed": null}], "position": {"x": 360, "y": 640}},
     {"id": "s057", "name": "Háje", "lines": ["C"], "interchange": false, "targets": [{"line": "C", "image": "./images/C/haje.jpg", "datePhotographed": null}], "position": {"x": 360, "y": 700}},
-    {"id": "s058", "name": "Černý Most", "lines": ["C"], "interchange": false, "targets": [{"line": "B", "image": "./images/B/cerny-most.jpg", "datePhotographed": null}], "position": {"x": 540, "y": 410}}
+    {"id": "s058", "name": "Černý Most", "lines": ["B"], "interchange": false, "targets": [{"line": "B", "image": "./images/B/cerny-most.jpg", "datePhotographed": null}], "position": {"x": 540, "y": 410}}
   ]
 }
